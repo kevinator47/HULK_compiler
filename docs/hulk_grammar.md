@@ -7,6 +7,8 @@ A continuación se presenta la gramática actual del lenguaje HULK, que incluye 
 ## Gramática LL(1)
 
 ```plaintext
+S       → Program
+
 Program → FunctionDef Program
          | P OpEnd
 
@@ -49,19 +51,19 @@ OpAnd    → & Compare OpAnd
           | ε
 
 Compare → S OpCompare
-OpCompare → == S OpCompare
-          | != S OpCompare
-          | < S OpCompare
-          | > S OpCompare
-          | <= S OpCompare
-          | >= S OpCompare
+OpCompare → == X OpCompare
+          | != X OpCompare
+          | < X OpCompare
+          | > X OpCompare
+          | <= X OpCompare
+          | >= X OpCompare
           | ε
 
-S      → F Op1
-Op1    → + S Op1
-       | - S Op1
-       | @ S Op1
-       | @@ S Op1
+X      → F Op1
+Op1    → + X Op1
+       | - X Op1
+       | @ X Op1
+       | @@ X Op1
        | ε
 
 F      → T Op3

@@ -1,47 +1,27 @@
-# Compiler and flags
-CXX := g++
-CXXFLAGS := -std=c++17 -Wall -Wextra -Iinclude
+CC = gcc
+FLEX = flex
+BISON = bison
+TARGET = hulk-compiler
+BUILD_DIR = build
+SRC_DIR = src/frontend
+INCLUDE_DIR = include
 
-# Directories
-BUILD_DIR := build
-SRC_DIR := src
-INCLUDE_DIR := include
+all: create_dirs $(TARGET)
 
-# Files
-SRCS := $(wildcard $(SRC_DIR)/*.cpp)
-OBJS := $(patsubst $(SRC_DIR)/%.cpp,$(BUILD_DIR)/%.o,$(SRCS))
-TARGET := $(BUILD_DIR)/hulkc
-INPUT_SCRIPT := script.hulk
+create_dirs:
+	mkdir -p $(BUILD_DIR)
 
-.PHONY: all build run clean mkdir
-
-all: build
-
-# Rule to create build directory
-mkdir:
-	@mkdir -p $(BUILD_DIR)
-
-# Compile .cpp files to .o
-$(BUILD_DIR)/%.o: $(SRC_DIR)/%.cpp | mkdir
-	$(CXX) $(CXXFLAGS) -c $< -o $@
-
-# Link all .o files to create executable
-$(TARGET): $(OBJS) | mkdir
-	$(CXX) $(CXXFLAGS) $^ -o $@
-
-# Main build rule
-build: $(TARGET)
-	@echo "✅ Build completado"
-	@if [ -f "$(INPUT_SCRIPT)" ]; then \
-		echo "📜 Ejecutando compilador con $(INPUT_SCRIPT)"; \
-		./$(TARGET) "$(INPUT_SCRIPT)"; \
-	else \
-		echo "❌ Error: No se encontró $(INPUT_SCRIPT)"; \
-		exit 1; \
-	fi
-run: build
-	@echo "🚧 Run (pendiente de implementación)"
+$(TARGET):
+	$(BISON) -d -o $(BUILD_DIR)/parser.tab.c $(SRC_DIR)/parser.y
+	$(FLEX) -o $(BUILD_DIR)/lex.yy.c $(SRC_DIR)/lexer.l
+	$(CC) -o $(BUILD_DIR)/$(TARGET) \
+		$(SRC_DIR)/ast.c \
+		$(BUILD_DIR)/lex.yy.c \
+		$(BUILD_DIR)/parser.tab.c \
+		-I$(INCLUDE_DIR) -lm
 
 clean:
-	rm -rf $(BUILD_DIR)
-	@echo "🧹 Directorio $(BUILD_DIR) eliminado"
+	rm -rf $(BUILD_DIR)/*
+
+test:
+	$(BUILD_DIR)/$(TARGET) < tests/arithmetic/test1.hulk

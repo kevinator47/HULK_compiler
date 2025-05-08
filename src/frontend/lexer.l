@@ -1,5 +1,5 @@
 %{
-#include "ast.h"
+#include "entities/ast.h"
 #include "parser.tab.h"
 #include <string.h>
 

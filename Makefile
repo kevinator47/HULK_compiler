@@ -16,7 +16,7 @@ build: create_dirs
 	$(BISON) -d -o $(BUILD_DIR)/parser.tab.c $(SRC_DIR)/parser.y
 	$(FLEX) -o $(BUILD_DIR)/lex.yy.c $(SRC_DIR)/lexer.l
 	$(CC) $(CFLAGS) -o $(BUILD_DIR)/$(TARGET) \
-		$(SRC_DIR)/ast.c \
+		$(SRC_DIR)/entities/ast.c \
 		$(BUILD_DIR)/lex.yy.c \
 		$(BUILD_DIR)/parser.tab.c
 

@@ -55,13 +55,25 @@ extern int yydebug;
     YYerror = 256,                 /* error  */
     YYUNDEF = 257,                 /* "invalid token"  */
     NUMBER = 258,                  /* NUMBER  */
-    VARIABLE = 259,                /* VARIABLE  */
-    ADD = 260,                     /* ADD  */
-    SUB = 261,                     /* SUB  */
-    MUL = 262,                     /* MUL  */
-    DIV = 263,                     /* DIV  */
-    LPAREN = 264,                  /* LPAREN  */
-    RPAREN = 265                   /* RPAREN  */
+    BOOLEAN = 259,                 /* BOOLEAN  */
+    STRING = 260,                  /* STRING  */
+    COMP = 261,                    /* COMP  */
+    ADD = 262,                     /* ADD  */
+    SUB = 263,                     /* SUB  */
+    MUL = 264,                     /* MUL  */
+    DIV = 265,                     /* DIV  */
+    MOD = 266,                     /* MOD  */
+    POW = 267,                     /* POW  */
+    CONCAT = 268,                  /* CONCAT  */
+    DCONCAT = 269,                 /* DCONCAT  */
+    AND = 270,                     /* AND  */
+    OR = 271,                      /* OR  */
+    NOT = 272,                     /* NOT  */
+    LPAREN = 273,                  /* LPAREN  */
+    RPAREN = 274,                  /* RPAREN  */
+    LBRACKET = 275,                /* LBRACKET  */
+    RBRACKET = 276,                /* RBRACKET  */
+    SEMICOLON = 277                /* SEMICOLON  */
   };
   typedef enum yytokentype yytoken_kind_t;
 #endif
@@ -70,13 +82,19 @@ extern int yydebug;
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
 union YYSTYPE
 {
-#line 9 "src/frontend/parser.y"
+#line 12 "src/frontend/parser.y"
 
-    double double_val;
-    char* string_val;
-    ASTNode* node;
+    double dval;
+    int ival;
+    char* sval;
+    TokenType token;
+    struct ASTNode* node;
+    struct {
+        ASTNode** nodes;
+        int count;
+    } node_list;
 
-#line 80 "build/parser.tab.h"
+#line 98 "build/parser.tab.h"
 
 };
 typedef union YYSTYPE YYSTYPE;

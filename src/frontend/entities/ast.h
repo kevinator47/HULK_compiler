@@ -2,6 +2,10 @@
 #ifndef AST_H
 #define AST_H
 
+#include "../common/common.h"
+#include "symbol_table.h"
+#include <stdbool.h>
+
 typedef enum {
     Number_Literal_Node ,
     Boolean_Literal_Node ,
@@ -9,6 +13,8 @@ typedef enum {
     Unary_Op_Node ,
     Binary_Op_Node ,
     Expression_Block_Node,
+    Let_Node,
+    Variable_Node,
 } NodeType;
 
 typedef enum {
@@ -69,11 +75,27 @@ typedef struct ExpressionBlockNode {
     int count;
 } ExpressionBlockNode;
 
+typedef struct LetNode {
+    ASTNode base;
+    SymbolTable* scope;
+    ASTNode* body;
+} LetNode;
+
+typedef struct VariableNode {
+    ASTNode base;
+    char* name;
+    SymbolTable* scope;
+} VariableNode;
+
+
 ASTNode* make_number_literal_node(double value);
 ASTNode* make_boolean_literal_node(int value);
 ASTNode* make_string_literal_node(char* value);
 ASTNode* make_unary_op_literal_node(ASTNode* operand, TokenType operation);
 ASTNode* make_binary_op_literal_node(ASTNode* left, ASTNode* right, TokenType operation);
 ASTNode* make_expression_block_node(ASTNode** expressions, int count);
+ASTNode* make_let_node(SymbolTable* scope, ASTNode* body);
+ASTNode* make_variable_node(char* name, SymbolTable* scope);
+
 void print_ast(ASTNode* node, int indent_level);
 #endif

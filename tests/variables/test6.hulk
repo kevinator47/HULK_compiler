@@ -1,0 +1,1 @@
+let a = (let b = 6 in b * 7) in a;

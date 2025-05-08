@@ -1,0 +1,7 @@
+let base = 2,
+    exponente = 3,
+    resultado = base ^ exponente
+in {
+    resultado + 1;
+    
+};

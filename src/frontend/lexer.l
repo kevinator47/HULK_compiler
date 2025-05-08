@@ -9,13 +9,18 @@ void yyerror(const char*);
 delim       [ \t\n]
 ws          {delim}+
 digit       [0-9]
+letter      [a-zA-Z]
 number      {digit}+(\.{digit}+)?
 string      \"([^"\\]|\\.)*\"
+id          {letter}({letter}|{digit}|_)*
 
 %%
 
 {ws}                { /* Ignorar */ }            
 "true"|"false"      { yylval.ival = strcmp(yytext, "true") == 0; return BOOLEAN; }
+"let"               { return LET; }
+"in"                { return IN; }
+{id}                { yylval.sval = strdup(yytext); return ID; }
 {number}            { yylval.dval = atof(yytext); return NUMBER; }
 "+"                 { return ADD; }
 "-"                 { return SUB; }
@@ -34,11 +39,13 @@ string      \"([^"\\]|\\.)*\"
 "<="                { yylval.token = LE_TK; return COMP; }
 "=="                { yylval.token = EQ_TK; return COMP; }
 "!="                { yylval.token = NE_TK; return COMP; }
+"="                 { return ASSIGN; }
 "@"                 { return CONCAT; }
 "@@"                { return DCONCAT; }
 "{"                 { return LBRACKET; }
 "}"                 { return RBRACKET; }
 ";"                 { return SEMICOLON; }
+","                 { return COMMA; }
 {string}            {
                         yytext[strlen(yytext)-1] = '\0';  // remove ending quote
                         char* src = yytext + 1;           // skip starting quote

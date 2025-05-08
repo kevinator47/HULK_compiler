@@ -57,23 +57,28 @@ extern int yydebug;
     NUMBER = 258,                  /* NUMBER  */
     BOOLEAN = 259,                 /* BOOLEAN  */
     STRING = 260,                  /* STRING  */
-    COMP = 261,                    /* COMP  */
-    ADD = 262,                     /* ADD  */
-    SUB = 263,                     /* SUB  */
-    MUL = 264,                     /* MUL  */
-    DIV = 265,                     /* DIV  */
-    MOD = 266,                     /* MOD  */
-    POW = 267,                     /* POW  */
-    CONCAT = 268,                  /* CONCAT  */
-    DCONCAT = 269,                 /* DCONCAT  */
-    AND = 270,                     /* AND  */
-    OR = 271,                      /* OR  */
-    NOT = 272,                     /* NOT  */
-    LPAREN = 273,                  /* LPAREN  */
-    RPAREN = 274,                  /* RPAREN  */
-    LBRACKET = 275,                /* LBRACKET  */
-    RBRACKET = 276,                /* RBRACKET  */
-    SEMICOLON = 277                /* SEMICOLON  */
+    ID = 261,                      /* ID  */
+    COMP = 262,                    /* COMP  */
+    ADD = 263,                     /* ADD  */
+    SUB = 264,                     /* SUB  */
+    MUL = 265,                     /* MUL  */
+    DIV = 266,                     /* DIV  */
+    MOD = 267,                     /* MOD  */
+    POW = 268,                     /* POW  */
+    CONCAT = 269,                  /* CONCAT  */
+    DCONCAT = 270,                 /* DCONCAT  */
+    AND = 271,                     /* AND  */
+    OR = 272,                      /* OR  */
+    NOT = 273,                     /* NOT  */
+    LPAREN = 274,                  /* LPAREN  */
+    RPAREN = 275,                  /* RPAREN  */
+    LBRACKET = 276,                /* LBRACKET  */
+    RBRACKET = 277,                /* RBRACKET  */
+    COMMA = 278,                   /* COMMA  */
+    SEMICOLON = 279,               /* SEMICOLON  */
+    LET = 280,                     /* LET  */
+    IN = 281,                      /* IN  */
+    ASSIGN = 282                   /* ASSIGN  */
   };
   typedef enum yytokentype yytoken_kind_t;
 #endif
@@ -82,19 +87,26 @@ extern int yydebug;
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
 union YYSTYPE
 {
-#line 12 "src/frontend/parser.y"
+#line 14 "src/frontend/parser.y"
 
     double dval;
     int ival;
     char* sval;
     TokenType token;
     struct ASTNode* node;
+    
     struct {
         ASTNode** nodes;
         int count;
     } node_list;
+    
+    struct {
+        char* name;
+        ASTNode* value;
+        struct SymbolTable* scope; 
+    } var_decl;
 
-#line 98 "build/parser.tab.h"
+#line 110 "build/parser.tab.h"
 
 };
 typedef union YYSTYPE YYSTYPE;

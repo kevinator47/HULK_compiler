@@ -81,7 +81,9 @@ extern int yydebug;
     ASSIGN = 282,                  /* ASSIGN  */
     IF = 283,                      /* IF  */
     ELIF = 284,                    /* ELIF  */
-    ELSE = 285                     /* ELSE  */
+    ELSE = 285,                    /* ELSE  */
+    FUNCTION = 286,                /* FUNCTION  */
+    ARROW = 287                    /* ARROW  */
   };
   typedef enum yytokentype yytoken_kind_t;
 #endif
@@ -90,7 +92,7 @@ extern int yydebug;
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
 union YYSTYPE
 {
-#line 14 "src/frontend/parser.y"
+#line 17 "src/frontend/parser.y"
 
     double dval;
     int ival;
@@ -115,7 +117,18 @@ union YYSTYPE
         int count;
     } elif_list;
 
-#line 119 "build/parser.tab.h"
+    struct {
+        char* name;
+        char** parameters;
+        int param_count;
+    } function_header;
+
+    struct {
+        char** names;
+        int count;
+    } param_list;
+
+#line 132 "build/parser.tab.h"
 
 };
 typedef union YYSTYPE YYSTYPE;

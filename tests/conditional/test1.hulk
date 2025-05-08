@@ -1,6 +1,5 @@
-let a = 42 in
-    if (a % 2 == 0) {
-        a;
-        "Even";
-    }
-    else ("Odd");
+let a = 42, mod = a % 3 in
+        if (mod == 0) "Magic"
+        elif (mod % 3 == 1) "Woke"
+        else "Dumb"
+    ;

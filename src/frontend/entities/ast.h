@@ -16,6 +16,7 @@ typedef enum {
     Let_Node,
     Variable_Node,
     Conditional_Node,
+    Function_Call_Node,
 } NodeType;
 
 typedef enum {
@@ -100,6 +101,14 @@ typedef struct ConditionalNode {
     ASTNode* else_branch;     
 } ConditionalNode;
 
+typedef struct FunctionCallNode {
+    ASTNode base;
+    char* name;
+    ASTNode** arguments;
+    int arg_count;
+} FunctionCallNode;
+
+
 ASTNode* make_number_literal_node(double value);
 ASTNode* make_boolean_literal_node(int value);
 ASTNode* make_string_literal_node(char* value);
@@ -109,6 +118,7 @@ ASTNode* make_expression_block_node(ASTNode** expressions, int count);
 ASTNode* make_let_node(SymbolTable* scope, ASTNode* body);
 ASTNode* make_variable_node(char* name, SymbolTable* scope);
 ASTNode* make_conditional_node(ASTNode* condition, ASTNode* if_branch,  ASTNode** elif_conditions, ASTNode** elif_branches, int elif_count, ASTNode* else_branch);
-
+ASTNode* make_function_call_node(char* name, ASTNode** arguments, int arg_count);
 void print_ast(ASTNode* node, int indent_level);
+void free_ast(ASTNode* node);
 #endif

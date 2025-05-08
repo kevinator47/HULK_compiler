@@ -1,14 +1,17 @@
 %{
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include "entities/ast.h"
 #include "entities/symbol_table.h"
+#include "entities/function_table.h"
 
 extern int yylex();
 void yyerror(const char *s);
 
 ASTNode *root;
 SymbolTable* current_scope;
+FunctionTable* function_table;
 %}
 
 %union {
@@ -34,6 +37,17 @@ SymbolTable* current_scope;
         ASTNode** branches;
         int count;
     } elif_list;
+
+    struct {
+        char* name;
+        char** parameters;
+        int param_count;
+    } function_header;
+
+    struct {
+        char** names;
+        int count;
+    } param_list;
 }
 
 %token <dval> NUMBER
@@ -46,6 +60,7 @@ SymbolTable* current_scope;
 %token LPAREN RPAREN LBRACKET RBRACKET COMMA SEMICOLON 
 %token LET IN ASSIGN
 %token IF ELIF ELSE
+%token FUNCTION ARROW
 
 %type <node> Statement Expression BlockExpr
 %type <node_list> StatementList
@@ -53,6 +68,13 @@ SymbolTable* current_scope;
 %type <node> LetExpr ConditionalExpr
 %type <var_decl> VarDecl
 %type <var_decl> VarDeclList
+%type <function_header> FunctionHeader
+%type <node> FunctionBody
+%type <param_list> ParameterList
+%type <sval> Parameter
+%type <node_list> Arguments
+%type <node_list> ArgumentList
+%type <node_list> IDRest
 %type <node> OrExpr 
 %type <node> AndExpr
 %type <node> CompExpr
@@ -71,7 +93,55 @@ SymbolTable* current_scope;
 
 %%
 
-Program     : Statement OptionalEnd     { root = $1; }
+Program     : FunctionList Statement OptionalEnd     { root = $2; }
+            ;
+
+FunctionList: /* empty */
+            | FunctionList FunctionDecl
+            ;
+
+FunctionDecl: FunctionHeader FunctionBody
+            {
+                SymbolTable* func_scope = create_symbol_table(100, current_scope);
+                register_function(function_table, $1.name, $1.parameters, $1.param_count, $2, func_scope);
+                for(int i = 0; i < $1.param_count; i++) free($1.parameters[i]);
+                free($1.parameters);
+            }
+            ;
+
+FunctionHeader: FUNCTION ID LPAREN ParameterList RPAREN
+            {
+                $$.name = $2;
+                $$.parameters = $4.names;
+                $$.param_count = $4.count;
+            }
+            ;
+
+FunctionBody: ARROW Expression SEMICOLON         { $$ = $2; }
+            | BlockExpr OptionalEnd              { $$ = $1; }
+            ;
+
+ParameterList: /* empty */
+            {
+                $$.names = NULL;
+                $$.count = 0;
+            }
+            | Parameter
+            {
+                $$.names = malloc(sizeof(char*));
+                $$.names[0] = $1;
+                $$.count = 1;
+            }
+            | ParameterList COMMA Parameter
+            {
+                int new_count = $1.count + 1;
+                $$.names = realloc($1.names, new_count * sizeof(char*));
+                $$.names[new_count - 1] = $3;
+                $$.count = new_count;
+            }
+            ;
+
+Parameter   : ID                        { $$ = strdup($1); }
             ;
 
 OptionalEnd : SEMICOLON     
@@ -193,11 +263,41 @@ PowExpr     : T POW PowExpr             { $$ = make_binary_op_literal_node($1, $
 T           : NUMBER                    { $$ = make_number_literal_node($1); }
             | BOOLEAN                   { $$ = make_boolean_literal_node($1); }
             | STRING                    { $$ = make_string_literal_node($1); }
-            | ID                        { $$ = make_variable_node($1, current_scope); }
             | LPAREN Expression RPAREN  { $$ = $2; }
             | BlockExpr                 { $$ = $1; }
             | NOT T                     { $$ = make_unary_op_literal_node($2, NOT_TK); }
             | SUB T                     { $$ = make_unary_op_literal_node($2, MINUS_TK); }
+            | ID IDRest                 { 
+                                            if ($2.count == -1) {
+                                            // Es una variable normal
+                                                $$ = make_variable_node($1, current_scope);
+                                            } else {
+                                                // Es una llamada a función
+                                                $$ = make_function_call_node($1, $2.nodes, $2.count);
+                                                free($2.nodes);
+                                            }
+                                        }
+            ;
+
+IDRest      : LPAREN Arguments RPAREN  { $$ = $2; }
+            | /* empty */              { $$.count = -1; $$.nodes = NULL; }
+            ;
+
+Arguments   : /* empty */              { $$.nodes = NULL; $$.count = 0; }
+            | ArgumentList             { $$ = $1; }
+            ;
+
+ArgumentList: Expression               {
+                $$.nodes = malloc(sizeof(ASTNode*));
+                $$.nodes[0] = $1;
+                $$.count = 1;
+            }
+            | ArgumentList COMMA Expression {
+                int new_count = $1.count + 1;
+                $$.nodes = realloc($1.nodes, new_count * sizeof(ASTNode*));
+                $$.nodes[new_count - 1] = $3;
+                $$.count = new_count;
+            }
             ;
 
 %%
@@ -208,11 +308,14 @@ void yyerror(const char *s) {
 
 int main() {
     current_scope = create_symbol_table(100, NULL);
+    function_table = create_function_table(100);
     yyparse();
     if (root != NULL) {
         printf("AST:\n");
         print_ast(root, 0);
+        free_ast(root);
     }
     free_symbol_table(current_scope);
+    free_function_table(function_table);
     return 0;
 }

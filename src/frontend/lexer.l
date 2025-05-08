@@ -23,6 +23,7 @@ id          {letter}({letter}|{digit}|_)*
 "if"                { return IF; }
 "elif"              { return ELIF; }
 "else"              { return ELSE; }
+"function"           { return FUNCTION; }
 {id}                { yylval.sval = strdup(yytext); return ID; }
 {number}            { yylval.dval = atof(yytext); return NUMBER; }
 "+"                 { return ADD; }
@@ -47,6 +48,7 @@ id          {letter}({letter}|{digit}|_)*
 "@@"                { return DCONCAT; }
 "{"                 { return LBRACKET; }
 "}"                 { return RBRACKET; }
+"=>"                { return ARROW; }
 ";"                 { return SEMICOLON; }
 ","                 { return COMMA; }
 {string}            {

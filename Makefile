@@ -3,7 +3,7 @@ FLEX = flex
 BISON = bison
 TARGET = hulk-compiler
 BUILD_DIR = build
-TEST_DIR = tests/conditional
+TEST_DIR = tests/functions
 SRC_DIR = src/frontend
 CFLAGS = -I$(SRC_DIR) -I$(SRC_DIR)/common
 
@@ -18,6 +18,7 @@ build: create_dirs
 	$(CC) $(CFLAGS) -o $(BUILD_DIR)/$(TARGET) \
 		$(SRC_DIR)/entities/ast.c \
 		$(SRC_DIR)/entities/symbol_table.c \
+		$(SRC_DIR)/entities/function_table.c \
 		$(BUILD_DIR)/lex.yy.c \
 		$(BUILD_DIR)/parser.tab.c
 

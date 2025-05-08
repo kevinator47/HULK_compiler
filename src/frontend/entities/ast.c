@@ -116,6 +116,84 @@ ASTNode* make_conditional_node(ASTNode* condition, ASTNode* if_branch, ASTNode**
     return (ASTNode*)node;
 }
 
+ASTNode* make_function_call_node(char* name, ASTNode** arguments, int arg_count) {
+    FunctionCallNode* node = malloc(sizeof(FunctionCallNode));
+    if (!node) return NULL;
+
+    node->base.type = Function_Call_Node;
+    node->name = strdup(name);
+    node->arguments = malloc(sizeof(ASTNode*) * arg_count);
+    memcpy(node->arguments, arguments, sizeof(ASTNode*) * arg_count);
+    node->arg_count = arg_count;
+    
+    return (ASTNode*)node;
+}
+
+void free_ast(ASTNode* node) {
+    if (!node) return;
+
+    switch (node->type) {
+        case String_Literal_Node: {
+            StringLiteralNode* n = (StringLiteralNode*)node;
+            free(n->value);
+            break;
+        }
+        case Unary_Op_Node: {
+            UnaryOpNode* n = (UnaryOpNode*)node;
+            free_ast(n->operand);
+            break;
+        }
+        case Binary_Op_Node: {
+            BinaryOpNode* n = (BinaryOpNode*)node;
+            free_ast(n->left);
+            free_ast(n->right);
+            break;
+        }
+        case Expression_Block_Node: {
+            ExpressionBlockNode* n = (ExpressionBlockNode*)node;
+            for (int i = 0; i < n->count; i++) {
+                free_ast(n->expressions[i]);
+            }
+            free(n->expressions);
+            break;
+        }
+        case Variable_Node: {
+            VariableNode* n = (VariableNode*)node;
+            free(n->name);
+            break;
+        }
+        case Function_Call_Node: {
+            FunctionCallNode* n = (FunctionCallNode*)node;
+            free(n->name);
+            for (int i = 0; i < n->arg_count; i++) {
+                free_ast(n->arguments[i]);
+            }
+            free(n->arguments);
+            break;
+        }
+        case Conditional_Node: {
+            ConditionalNode* n = (ConditionalNode*)node;
+            free_ast(n->condition);
+            free_ast(n->if_branch);
+            for (int i = 0; i < n->elifs.count; i++) {
+                free_ast(n->elifs.conditions[i]);
+                free_ast(n->elifs.branches[i]);
+            }
+            free(n->elifs.conditions);
+            free(n->elifs.branches);
+            free_ast(n->else_branch);
+            break;
+        }
+        case Let_Node: {
+            LetNode* n = (LetNode*)node;
+            free_symbol_table(n->scope);
+            free_ast(n->body);
+            break;
+        }
+    }
+    free(node);
+}
+
 void print_ast(ASTNode* node, int indent_level) {
     if (node == NULL) return;
     
@@ -214,6 +292,16 @@ void print_ast(ASTNode* node, int indent_level) {
         
             printf("%*sElse:\n", (indent_level + 1) * 2, "");
             print_ast(n->else_branch, indent_level + 2);
+            break;
+        }
+
+        case Function_Call_Node: {
+            FunctionCallNode* n = (FunctionCallNode*)node;
+            printf("Function Call: %s\n", n->name);
+            printf("%*sArguments:\n", (indent_level + 1) * 2, "");
+            for (int i = 0; i < n->arg_count; i++) {
+                print_ast(n->arguments[i], indent_level + 2);
+            }
             break;
         }
 

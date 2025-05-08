@@ -3,25 +3,30 @@ FLEX = flex
 BISON = bison
 TARGET = hulk-compiler
 BUILD_DIR = build
+TEST_DIR = tests
 SRC_DIR = src/frontend
-INCLUDE_DIR = include
+CFLAGS = -I$(SRC_DIR)
 
-all: create_dirs $(TARGET)
+all: build
 
 create_dirs:
 	mkdir -p $(BUILD_DIR)
 
-$(TARGET):
+build: create_dirs
 	$(BISON) -d -o $(BUILD_DIR)/parser.tab.c $(SRC_DIR)/parser.y
 	$(FLEX) -o $(BUILD_DIR)/lex.yy.c $(SRC_DIR)/lexer.l
-	$(CC) -o $(BUILD_DIR)/$(TARGET) \
+	$(CC) $(CFLAGS) -o $(BUILD_DIR)/$(TARGET) \
 		$(SRC_DIR)/ast.c \
 		$(BUILD_DIR)/lex.yy.c \
-		$(BUILD_DIR)/parser.tab.c \
-		-I$(INCLUDE_DIR) -lm
+		$(BUILD_DIR)/parser.tab.c
+
+run: build
+	$(BUILD_DIR)/$(TARGET)
 
 clean:
 	rm -rf $(BUILD_DIR)/*
 
 test:
-	$(BUILD_DIR)/$(TARGET) < tests/arithmetic/test1.hulk
+	@echo "Running all tests..."
+	@find $(TEST_DIR) -name "*.hulk" -type f -exec sh -c 'echo "\nTesting {}" && $(BUILD_DIR)/$(TARGET) < {}' \;
+

@@ -1,0 +1,8 @@
+function operate(x, y) {
+    print(x + y);
+    print(x - y);
+    print(x * y);
+    print(x / y);
+}
+
+operate(2,4);

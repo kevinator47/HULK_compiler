@@ -20,6 +20,9 @@ id          {letter}({letter}|{digit}|_)*
 "true"|"false"      { yylval.ival = strcmp(yytext, "true") == 0; return BOOLEAN; }
 "let"               { return LET; }
 "in"                { return IN; }
+"if"                { return IF; }
+"elif"              { return ELIF; }
+"else"              { return ELSE; }
 {id}                { yylval.sval = strdup(yytext); return ID; }
 {number}            { yylval.dval = atof(yytext); return NUMBER; }
 "+"                 { return ADD; }

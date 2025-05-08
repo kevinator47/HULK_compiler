@@ -100,6 +100,22 @@ ASTNode* make_variable_node(char* name, SymbolTable* scope) {
     return (ASTNode*)node;
 }
 
+ASTNode* make_conditional_node(ASTNode* condition, ASTNode* if_branch, ASTNode** elif_conditions, ASTNode** elif_branches, int elif_count, ASTNode* else_branch) {
+    
+    ConditionalNode* node = malloc(sizeof(ConditionalNode));
+    if (!node) return NULL;
+
+    node->base.type = Conditional_Node;
+    node->condition = condition;
+    node->if_branch = if_branch;
+    node->elifs.conditions = elif_conditions;
+    node->elifs.branches = elif_branches;
+    node->elifs.count = elif_count;
+    node->else_branch = else_branch;
+
+    return (ASTNode*)node;
+}
+
 void print_ast(ASTNode* node, int indent_level) {
     if (node == NULL) return;
     
@@ -178,6 +194,26 @@ void print_ast(ASTNode* node, int indent_level) {
             }
             printf("%*sIn:\n", (indent_level + 1) * 2, "");
             print_ast(n->body, indent_level + 2);
+            break;
+        }
+
+        case Conditional_Node: {
+            ConditionalNode* n = (ConditionalNode*)node;
+            printf("Conditional:\n");
+            printf("%*sIf:\n", (indent_level + 1) * 2, "");
+            print_ast(n->condition, indent_level + 2);
+            printf("%*sThen:\n", (indent_level + 1) * 2, "");
+            print_ast(n->if_branch, indent_level + 2);
+        
+            for (int i = 0; i < n->elifs.count; i++) {
+                printf("%*sElif:\n", (indent_level + 1) * 2, "");
+                print_ast(n->elifs.conditions[i], indent_level + 2);
+                printf("%*sThen:\n", (indent_level + 1) * 2, "");
+                print_ast(n->elifs.branches[i], indent_level + 2);
+            }
+        
+            printf("%*sElse:\n", (indent_level + 1) * 2, "");
+            print_ast(n->else_branch, indent_level + 2);
             break;
         }
 

@@ -78,7 +78,10 @@ extern int yydebug;
     SEMICOLON = 279,               /* SEMICOLON  */
     LET = 280,                     /* LET  */
     IN = 281,                      /* IN  */
-    ASSIGN = 282                   /* ASSIGN  */
+    ASSIGN = 282,                  /* ASSIGN  */
+    IF = 283,                      /* IF  */
+    ELIF = 284,                    /* ELIF  */
+    ELSE = 285                     /* ELSE  */
   };
   typedef enum yytokentype yytoken_kind_t;
 #endif
@@ -106,7 +109,13 @@ union YYSTYPE
         struct SymbolTable* scope; 
     } var_decl;
 
-#line 110 "build/parser.tab.h"
+    struct {
+        ASTNode** conditions;
+        ASTNode** branches;
+        int count;
+    } elif_list;
+
+#line 119 "build/parser.tab.h"
 
 };
 typedef union YYSTYPE YYSTYPE;

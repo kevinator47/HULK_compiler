@@ -28,6 +28,12 @@ SymbolTable* current_scope;
         ASTNode* value;
         struct SymbolTable* scope; 
     } var_decl;
+
+    struct {
+        ASTNode** conditions;
+        ASTNode** branches;
+        int count;
+    } elif_list;
 }
 
 %token <dval> NUMBER
@@ -39,10 +45,12 @@ SymbolTable* current_scope;
 %token AND OR NOT
 %token LPAREN RPAREN LBRACKET RBRACKET COMMA SEMICOLON 
 %token LET IN ASSIGN
+%token IF ELIF ELSE
 
 %type <node> Statement Expression BlockExpr
 %type <node_list> StatementList
-%type <node> LetExpr
+%type <elif_list> ElifList
+%type <node> LetExpr ConditionalExpr
 %type <var_decl> VarDecl
 %type <var_decl> VarDeclList
 %type <node> OrExpr 
@@ -75,6 +83,7 @@ Statement   : Expression                { $$ = $1; }
 
 Expression  :  OrExpr                    { $$ = $1; }
             |  LetExpr                   { $$ = $1; }
+            |  ConditionalExpr           { $$ = $1; }
             ;
 
 BlockExpr   : LBRACKET StatementList RBRACKET 
@@ -127,6 +136,30 @@ VarDecl    : ID ASSIGN Expression
                $$.value = $3; 
            }
            ;
+
+ConditionalExpr 
+            : IF LPAREN Expression RPAREN Expression ElifList ELSE Expression
+            {
+                $$ = make_conditional_node($3, $5, $6.conditions, $6.branches, $6.count, $8);
+            }
+            ;
+
+ElifList    : /* empty */
+            {
+                $$.conditions = NULL;
+                $$.branches = NULL;
+                $$.count = 0;
+            }
+            | ElifList ELIF LPAREN Expression RPAREN Expression
+            {
+                int new_count = $1.count + 1;
+                $$.conditions = realloc($1.conditions, new_count * sizeof(ASTNode*));
+                $$.branches = realloc($1.branches, new_count * sizeof(ASTNode*));
+                $$.conditions[new_count - 1] = $4;
+                $$.branches[new_count - 1] = $6;
+                $$.count = new_count;
+            }
+            ;
 
 OrExpr      : OrExpr OR AndExpr         { $$ = make_binary_op_literal_node($1, $3, OR_TK); }
             | AndExpr                   { $$ = $1; }

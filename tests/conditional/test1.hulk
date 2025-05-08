@@ -1,0 +1,6 @@
+let a = 42 in
+    if (a % 2 == 0) {
+        a;
+        "Even";
+    }
+    else ("Odd");

@@ -3,7 +3,7 @@ FLEX = flex
 BISON = bison
 TARGET = hulk-compiler
 BUILD_DIR = build
-TEST_DIR = tests/variables
+TEST_DIR = tests/conditional
 SRC_DIR = src/frontend
 CFLAGS = -I$(SRC_DIR) -I$(SRC_DIR)/common
 

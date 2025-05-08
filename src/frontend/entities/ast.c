@@ -1,5 +1,7 @@
 // ast.c
 #include "ast.h"
+#include "symbol_table.h"
+#include "../common/common.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -78,6 +80,26 @@ ASTNode* make_expression_block_node(ASTNode** expressions, int count) {
     return (ASTNode*)node;
 }
 
+ASTNode* make_let_node(SymbolTable* scope, ASTNode* body) {
+    LetNode* node = malloc(sizeof(LetNode));
+    if (!node) return NULL;
+
+    node->base.type = Let_Node;
+    node->scope = scope;
+    node->body = body;
+    return (ASTNode*)node;
+}
+
+ASTNode* make_variable_node(char* name, SymbolTable* scope) {
+    VariableNode* node = malloc(sizeof(VariableNode));
+    if (!node) return NULL;
+
+    node->base.type = Variable_Node;
+    node->name = strdup(name);
+    node->scope = scope;
+    return (ASTNode*)node;
+}
+
 void print_ast(ASTNode* node, int indent_level) {
     if (node == NULL) return;
     
@@ -123,6 +145,39 @@ void print_ast(ASTNode* node, int indent_level) {
             for(int i = 0; i < n->count; i++) {
                 print_ast(n->expressions[i], indent_level + 1);
             }
+            break;
+        }
+
+        case Variable_Node: {
+            VariableNode* n = (VariableNode*)node;
+            printf("Variable: %s\n", n->name);
+            
+            // Buscar la variable en el scope
+            Symbol* symbol = lookup_symbol(n->scope, n->name);
+            if (symbol) {
+                printf("%*sValue:\n", (indent_level + 1) * 2, "");
+                print_ast(symbol->expression, indent_level + 2);
+            } else {
+                printf("%*sUndefined variable\n", (indent_level + 1) * 2, "");
+            }
+            break;
+        }
+
+        case Let_Node: {
+            LetNode* n = (LetNode*)node;
+            printf("Let Expression:\n");
+            // Imprimir variables en el scope
+            Symbol** table = n->scope->table;
+            for (int i = 0; i < n->scope->size; i++) {
+                Symbol* current = table[i];
+                while (current) {
+                    printf("%*s%s = \n", (indent_level + 1) * 2, "", current->name);
+                    print_ast(current->expression, indent_level + 2);
+                    current = current->next;
+                }
+            }
+            printf("%*sIn:\n", (indent_level + 1) * 2, "");
+            print_ast(n->body, indent_level + 2);
             break;
         }
 

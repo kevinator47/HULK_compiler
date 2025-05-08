@@ -2,11 +2,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "entities/ast.h"
+#include "entities/symbol_table.h"
 
 extern int yylex();
 void yyerror(const char *s);
 
 ASTNode *root;
+SymbolTable* current_scope;
 %}
 
 %union {
@@ -15,23 +17,34 @@ ASTNode *root;
     char* sval;
     TokenType token;
     struct ASTNode* node;
+    
     struct {
         ASTNode** nodes;
         int count;
     } node_list;
+    
+    struct {
+        char* name;
+        ASTNode* value;
+        struct SymbolTable* scope; 
+    } var_decl;
 }
 
 %token <dval> NUMBER
 %token <ival> BOOLEAN
-%token <sval> STRING
+%token <sval> STRING ID
 %token <token> COMP
 %token ADD SUB MUL DIV MOD POW
 %token CONCAT DCONCAT
 %token AND OR NOT
-%token LPAREN RPAREN LBRACKET RBRACKET SEMICOLON
+%token LPAREN RPAREN LBRACKET RBRACKET COMMA SEMICOLON 
+%token LET IN ASSIGN
 
 %type <node> Statement Expression BlockExpr
 %type <node_list> StatementList
+%type <node> LetExpr
+%type <var_decl> VarDecl
+%type <var_decl> VarDeclList
 %type <node> OrExpr 
 %type <node> AndExpr
 %type <node> CompExpr
@@ -61,6 +74,7 @@ Statement   : Expression                { $$ = $1; }
             ;
 
 Expression  :  OrExpr                    { $$ = $1; }
+            |  LetExpr                   { $$ = $1; }
             ;
 
 BlockExpr   : LBRACKET StatementList RBRACKET 
@@ -86,6 +100,33 @@ StatementList : Statement SEMICOLON
             }
             ;
 
+LetExpr    : LET VarDeclList IN Expression 
+           { 
+               $$ = make_let_node($2.scope, $4);
+               current_scope = $2.scope->parent;
+           }
+           ;
+
+VarDeclList : VarDecl  
+            {
+               SymbolTable* scope = create_symbol_table(100, current_scope);
+               insert_symbol(scope, $1.name, $1.value);
+               current_scope = scope;
+               $$.scope = scope;
+            }
+            | VarDeclList COMMA VarDecl
+            {
+               insert_symbol($1.scope, $3.name, $3.value);
+               $$.scope = $1.scope;
+            }
+            ;
+
+VarDecl    : ID ASSIGN Expression          
+           { 
+               $$.name = $1; 
+               $$.value = $3; 
+           }
+           ;
 
 OrExpr      : OrExpr OR AndExpr         { $$ = make_binary_op_literal_node($1, $3, OR_TK); }
             | AndExpr                   { $$ = $1; }
@@ -119,6 +160,7 @@ PowExpr     : T POW PowExpr             { $$ = make_binary_op_literal_node($1, $
 T           : NUMBER                    { $$ = make_number_literal_node($1); }
             | BOOLEAN                   { $$ = make_boolean_literal_node($1); }
             | STRING                    { $$ = make_string_literal_node($1); }
+            | ID                        { $$ = make_variable_node($1, current_scope); }
             | LPAREN Expression RPAREN  { $$ = $2; }
             | BlockExpr                 { $$ = $1; }
             | NOT T                     { $$ = make_unary_op_literal_node($2, NOT_TK); }
@@ -132,10 +174,12 @@ void yyerror(const char *s) {
 }
 
 int main() {
+    current_scope = create_symbol_table(100, NULL);
     yyparse();
     if (root != NULL) {
         printf("AST:\n");
         print_ast(root, 0);
     }
+    free_symbol_table(current_scope);
     return 0;
 }

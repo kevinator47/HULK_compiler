@@ -5,6 +5,7 @@
 #include "entities/ast.h"
 #include "entities/symbol_table.h"
 #include "entities/function_table.h"
+#include "entities/visitor.h"
 
 extern int yylex();
 void yyerror(const char *s);
@@ -12,6 +13,7 @@ void yyerror(const char *s);
 ASTNode *root;
 SymbolTable* current_scope;
 FunctionTable* function_table;
+Visitor* visitor;
 %}
 
 %union {
@@ -313,6 +315,10 @@ int main() {
     if (root != NULL) {
         printf("AST:\n");
         print_ast(root, 0);
+        Visitor* visitor = init_visitor(root, function_table);
+        DataType type = check_semantic_expression(visitor, root);
+        if(type == ERROR_TYPE) printf("Hubo Error en este test \n");
+        if(type != ERROR_TYPE) printf("No hubo error en este test \n");
         free_ast(root);
     }
     free_symbol_table(current_scope);

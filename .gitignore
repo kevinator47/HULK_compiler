@@ -6,6 +6,7 @@
 *.lo
 *.o
 *.obj
+*.ll
 
 # Precompiled Headers
 *.gch
@@ -33,3 +34,4 @@
 
 # Directories
 /.idea/
+/.vscode/

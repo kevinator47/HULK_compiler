@@ -5,6 +5,10 @@
 #include "../common/common.h"
 #include "symbol_table.h"
 #include <stdbool.h>
+#include <llvm-c/Core.h>
+#include <llvm-c/Analysis.h>
+
+struct LLVMCodeGenerator; // Forward declaration
 
 typedef enum {
     Number_Literal_Node ,
@@ -41,6 +45,7 @@ typedef enum {
 
 typedef struct ASTNode {
     NodeType type;
+    LLVMValueRef (*accept)(struct ASTNode* self, struct LLVMCodeGenerator* visitor);
 } ASTNode;
 
 typedef struct NumberLiteralNode {

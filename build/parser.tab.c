@@ -79,7 +79,7 @@
 extern int yylex();
 void yyerror(const char *s);
 
-ASTNode *root;
+ASTNode *root_node;
 SymbolTable* current_scope;
 FunctionTable* function_table;
 Visitor* visitor;
@@ -2091,11 +2091,11 @@ void yyerror(const char *s) {
     fprintf(stderr, "Error: %s\n", s);
 }
 
-int main() {
+/*int main() {
     current_scope = create_symbol_table(100, NULL);
     function_table = create_function_table(100);
     yyparse();
-    if (root != NULL) {
+    if (root_node != NULL) {
         printf("AST:\n");
         print_ast(root, 0);
         Visitor* visitor = init_visitor(root, function_table);
@@ -2107,4 +2107,4 @@ int main() {
     free_symbol_table(current_scope);
     free_function_table(function_table);
     return 0;
-}
+}*/

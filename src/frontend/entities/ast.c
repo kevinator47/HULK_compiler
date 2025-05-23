@@ -5,12 +5,14 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "../codegen/ast_accept.h"
 
 ASTNode* make_number_literal_node(double value) {
     NumberLiteralNode* node = malloc(sizeof(NumberLiteralNode));
     if(!node) return NULL;
 
     node->base.type = Number_Literal_Node;
+    node->base.accept = generic_ast_accept;
     node->value = value;
     return (ASTNode*) node;
 }
@@ -20,6 +22,7 @@ ASTNode* make_boolean_literal_node(int value) {
     if(!node) return NULL;
 
     node->base.type = Boolean_Literal_Node;
+    node->base.accept = generic_ast_accept;
     node->value = value;
     return (ASTNode*) node;
 }
@@ -29,6 +32,7 @@ ASTNode* make_string_literal_node(char* value) {
     if(!node) return NULL;
 
     node->base.type = String_Literal_Node;
+    node->base.accept = generic_ast_accept;
     node->value = value;
     return (ASTNode*) node;
 }
@@ -40,6 +44,7 @@ ASTNode* make_unary_op_literal_node(ASTNode* operand, TokenType operation) {
     if(!node) return NULL;
 
     node->base.type = Unary_Op_Node;
+    node->base.accept = generic_ast_accept;
     node->operand = operand;
     node->operation = operation;
     return (ASTNode*) node;
@@ -53,6 +58,7 @@ ASTNode* make_binary_op_literal_node(ASTNode* left, ASTNode* right, TokenType op
     if(!node) return NULL;
 
     node->base.type = Binary_Op_Node;
+    node->base.accept = generic_ast_accept;
     node->left = left;
     node->right = right;
     node->operation = operation;
@@ -76,6 +82,7 @@ ASTNode* make_expression_block_node(ASTNode** expressions, int count) {
     }
 
     node->base.type = Expression_Block_Node;
+    node->base.accept = generic_ast_accept;
     node->count = count;
     return (ASTNode*)node;
 }
@@ -85,6 +92,7 @@ ASTNode* make_let_node(SymbolTable* scope, ASTNode* body) {
     if (!node) return NULL;
 
     node->base.type = Let_Node;
+    node->base.accept = generic_ast_accept;
     node->scope = scope;
     node->body = body;
     return (ASTNode*)node;
@@ -95,6 +103,7 @@ ASTNode* make_variable_node(char* name, SymbolTable* scope) {
     if (!node) return NULL;
 
     node->base.type = Variable_Node;
+    node->base.accept = generic_ast_accept;
     node->name = strdup(name);
     node->scope = scope;
     return (ASTNode*)node;
@@ -106,6 +115,7 @@ ASTNode* make_conditional_node(ASTNode* condition, ASTNode* if_branch, ASTNode**
     if (!node) return NULL;
 
     node->base.type = Conditional_Node;
+    node->base.accept = generic_ast_accept;
     node->condition = condition;
     node->if_branch = if_branch;
     node->elifs.conditions = elif_conditions;
@@ -121,6 +131,7 @@ ASTNode* make_function_call_node(char* name, ASTNode** arguments, int arg_count)
     if (!node) return NULL;
 
     node->base.type = Function_Call_Node;
+    node->base.accept = generic_ast_accept;
     node->name = strdup(name);
     node->arguments = malloc(sizeof(ASTNode*) * arg_count);
     memcpy(node->arguments, arguments, sizeof(ASTNode*) * arg_count);

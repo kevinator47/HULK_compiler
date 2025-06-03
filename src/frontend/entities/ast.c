@@ -126,6 +126,18 @@ ASTNode* make_conditional_node(ASTNode* condition, ASTNode* if_branch, ASTNode**
     return (ASTNode*)node;
 }
 
+ASTNode* make_while_loop_node(ASTNode* condition, ASTNode* body){
+    WhileLoopNode* node = malloc(sizeof(WhileLoopNode));
+    if(!node) return NULL;
+
+    node->base.type = While_Loop_Node;
+    node->base.accept = generic_ast_accept;
+    node->condition = condition;
+    node->body = body;
+
+    return (ASTNode*)node;
+}
+
 ASTNode* make_function_call_node(char* name, ASTNode** arguments, int arg_count) {
     FunctionCallNode* node = malloc(sizeof(FunctionCallNode));
     if (!node) return NULL;
@@ -198,6 +210,13 @@ void free_ast(ASTNode* node) {
         case Let_Node: {
             LetNode* n = (LetNode*)node;
             free_symbol_table(n->scope);
+            free_ast(n->body);
+            break;
+        }
+
+        case While_Loop_Node:{
+            WhileLoopNode* n = (WhileLoopNode*)node;
+            free_ast(n->condition);
             free_ast(n->body);
             break;
         }

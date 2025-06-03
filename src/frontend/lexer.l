@@ -23,7 +23,8 @@ id          {letter}({letter}|{digit}|_)*
 "if"                { return IF; }
 "elif"              { return ELIF; }
 "else"              { return ELSE; }
-"function"           { return FUNCTION; }
+"function"          { return FUNCTION; }
+"while"             { return WHILE; }
 {id}                { yylval.sval = strdup(yytext); return ID; }
 {number}            { yylval.dval = atof(yytext); return NUMBER; }
 "+"                 { return ADD; }

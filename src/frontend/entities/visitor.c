@@ -112,6 +112,13 @@ DataType check_semantic_expression(Visitor* visitor,ASTNode* node)
         FunctionCallNode* func = (FunctionCallNode*)node;
 
     }
+    case While_Loop_Node:{
+        WhileLoopNode* loop_node = (WhileLoopNode*) node;
+        DataType cond_type = check_semantic_expression(visitor, loop_node->condition);
+        if(cond_type != BOOL_TYPE) return ERROR_TYPE;
+        DataType body_type = check_semantic_expression(visitor, loop_node->body);
+        return body_type;
+    }
     default:
         break;
     }

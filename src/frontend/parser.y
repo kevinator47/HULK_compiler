@@ -62,12 +62,13 @@ Visitor* visitor;
 %token LPAREN RPAREN LBRACKET RBRACKET COMMA SEMICOLON 
 %token LET IN ASSIGN
 %token IF ELIF ELSE
+%token WHILE
 %token FUNCTION ARROW
 
 %type <node> Statement Expression BlockExpr
 %type <node_list> StatementList
 %type <elif_list> ElifList
-%type <node> LetExpr ConditionalExpr
+%type <node> LetExpr ConditionalExpr WhileExpr
 %type <var_decl> VarDecl
 %type <var_decl> VarDeclList
 %type <function_header> FunctionHeader
@@ -156,7 +157,13 @@ Statement   : Expression                { $$ = $1; }
 Expression  :  OrExpr                    { $$ = $1; }
             |  LetExpr                   { $$ = $1; }
             |  ConditionalExpr           { $$ = $1; }
+            |  WhileExpr                 { $$ = $1; }
             ;
+
+WhileExpr   : WHILE LPAREN Expression RPAREN Expression
+            {
+                $$ = make_while_loop_node($3, $5);   
+            }
 
 BlockExpr   : LBRACKET StatementList RBRACKET 
             {

@@ -21,6 +21,7 @@ typedef enum {
     Variable_Node,
     Conditional_Node,
     Function_Call_Node,
+    While_Loop_Node,
 } NodeType;
 
 typedef enum {
@@ -113,6 +114,14 @@ typedef struct FunctionCallNode {
     int arg_count;
 } FunctionCallNode;
 
+typedef struct WhileLoopNode
+{
+    ASTNode base;
+    ASTNode* condition;
+    ASTNode* body;
+}WhileLoopNode;
+
+
 
 ASTNode* make_number_literal_node(double value);
 ASTNode* make_boolean_literal_node(int value);
@@ -124,6 +133,8 @@ ASTNode* make_let_node(SymbolTable* scope, ASTNode* body);
 ASTNode* make_variable_node(char* name, SymbolTable* scope);
 ASTNode* make_conditional_node(ASTNode* condition, ASTNode* if_branch,  ASTNode** elif_conditions, ASTNode** elif_branches, int elif_count, ASTNode* else_branch);
 ASTNode* make_function_call_node(char* name, ASTNode** arguments, int arg_count);
+ASTNode* make_while_loop_node(ASTNode* condition, ASTNode* body);
 void print_ast(ASTNode* node, int indent_level);
 void free_ast(ASTNode* node);
+
 #endif

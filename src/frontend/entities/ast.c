@@ -1,4 +1,3 @@
-// ast.c
 #include "ast.h"
 #include "symbol_table.h"
 #include "../common/common.h"
@@ -38,8 +37,8 @@ ASTNode* make_string_literal_node(char* value) {
 }
 
 ASTNode* make_unary_op_literal_node(ASTNode* operand, TokenType operation) {
-    
     if (!operand) return NULL;
+    
     UnaryOpNode* node = malloc(sizeof(UnaryOpNode));
     if(!node) return NULL;
 
@@ -50,11 +49,10 @@ ASTNode* make_unary_op_literal_node(ASTNode* operand, TokenType operation) {
     return (ASTNode*) node;
 }
 
-ASTNode* make_binary_op_literal_node(ASTNode* left, ASTNode* right, TokenType operation) {
-    
+ASTNode* make_binary_op_literal_node(ASTNode* left, ASTNode* right, TokenType operation) {    
     if(!left || !right) return NULL;
-    BinaryOpNode* node = malloc(sizeof(BinaryOpNode));
-    
+
+    BinaryOpNode* node = malloc(sizeof(BinaryOpNode));    
     if(!node) return NULL;
 
     node->base.type = Binary_Op_Node;
@@ -87,17 +85,6 @@ ASTNode* make_expression_block_node(ASTNode** expressions, int count) {
     return (ASTNode*)node;
 }
 
-ASTNode* make_let_node(SymbolTable* scope, ASTNode* body) {
-    LetNode* node = malloc(sizeof(LetNode));
-    if (!node) return NULL;
-
-    node->base.type = Let_Node;
-    node->base.accept = generic_ast_accept;
-    node->scope = scope;
-    node->body = body;
-    return (ASTNode*)node;
-}
-
 ASTNode* make_variable_node(char* name, SymbolTable* scope) {
     VariableNode* node = malloc(sizeof(VariableNode));
     if (!node) return NULL;
@@ -109,7 +96,34 @@ ASTNode* make_variable_node(char* name, SymbolTable* scope) {
     return (ASTNode*)node;
 }
 
+ASTNode* make_let_node(SymbolTable* scope, ASTNode* body) {
+    if (!body) return NULL;
+    
+    LetNode* node = malloc(sizeof(LetNode));
+    if (! node) return NULL;
+
+    node->base.type = Let_Node;
+    node->base.accept = generic_ast_accept;
+    node->scope = scope;
+    node->body = body;
+    return (ASTNode*)node;
+}
+
+ASTNode* make_reassign_node(char* name, ASTNode* value, SymbolTable* scope) {
+    if (!value) return NULL;
+    
+    ReassignNode* node = malloc(sizeof(ReassignNode));
+    if (!node) return NULL;
+    node->base.type = Reassign_Node;
+    node->base.accept = generic_ast_accept;
+    node->name = strdup(name);
+    node->value = value;
+    node->scope = scope;
+    return (ASTNode*)node;
+}
 ASTNode* make_conditional_node(ASTNode* condition, ASTNode* if_branch, ASTNode** elif_conditions, ASTNode** elif_branches, int elif_count, ASTNode* else_branch) {
+    if (!condition || !if_branch || (elif_count > 0 && (!elif_conditions || !elif_branches)) || !else_branch) 
+        return NULL;
     
     ConditionalNode* node = malloc(sizeof(ConditionalNode));
     if (!node) return NULL;
@@ -123,17 +137,6 @@ ASTNode* make_conditional_node(ASTNode* condition, ASTNode* if_branch, ASTNode**
     node->elifs.count = elif_count;
     node->else_branch = else_branch;
 
-    return (ASTNode*)node;
-}
-
-ASTNode* make_reassign_node(char* name, ASTNode* value, SymbolTable* scope) {
-    ReassignNode* node = malloc(sizeof(ReassignNode));
-    if (!node) return NULL;
-    node->base.type = Reassign_Node;
-    node->base.accept = generic_ast_accept;
-    node->name = strdup(name);
-    node->value = value;
-    node->scope = scope;
     return (ASTNode*)node;
 }
 
@@ -152,6 +155,9 @@ ASTNode* make_function_call_node(char* name, ASTNode** arguments, int arg_count)
 }
 
 ASTNode* make_while_loop_node(ASTNode* condition, ASTNode* body){
+    if (!condition || !body) 
+        return NULL;    
+
     WhileLoopNode* node = malloc(sizeof(WhileLoopNode));
     if(!node) return NULL;
 
@@ -172,17 +178,20 @@ void free_ast(ASTNode* node) {
             free(n->value);
             break;
         }
+        
         case Unary_Op_Node: {
             UnaryOpNode* n = (UnaryOpNode*)node;
             free_ast(n->operand);
             break;
         }
+
         case Binary_Op_Node: {
             BinaryOpNode* n = (BinaryOpNode*)node;
             free_ast(n->left);
             free_ast(n->right);
             break;
         }
+
         case Expression_Block_Node: {
             ExpressionBlockNode* n = (ExpressionBlockNode*)node;
             for (int i = 0; i < n->count; i++) {
@@ -191,20 +200,27 @@ void free_ast(ASTNode* node) {
             free(n->expressions);
             break;
         }
+
         case Variable_Node: {
             VariableNode* n = (VariableNode*)node;
             free(n->name);
             break;
         }
-        case Function_Call_Node: {
-            FunctionCallNode* n = (FunctionCallNode*)node;
-            free(n->name);
-            for (int i = 0; i < n->arg_count; i++) {
-                free_ast(n->arguments[i]);
-            }
-            free(n->arguments);
+
+        case Let_Node: {
+            LetNode* n = (LetNode*)node;
+            free_symbol_table(n->scope);
+            free_ast(n->body);
             break;
         }
+
+        case Reassign_Node: {
+            ReassignNode* n = (ReassignNode*)node;
+            free(n->name);
+            free_ast(n->value);
+            break;
+        }
+
         case Conditional_Node: {
             ConditionalNode* n = (ConditionalNode*)node;
             free_ast(n->condition);
@@ -218,10 +234,14 @@ void free_ast(ASTNode* node) {
             free_ast(n->else_branch);
             break;
         }
-        case Let_Node: {
-            LetNode* n = (LetNode*)node;
-            free_symbol_table(n->scope);
-            free_ast(n->body);
+
+        case Function_Call_Node: {
+            FunctionCallNode* n = (FunctionCallNode*)node;
+            free(n->name);
+            for (int i = 0; i < n->arg_count; i++) {
+                free_ast(n->arguments[i]);
+            }
+            free(n->arguments);
             break;
         }
 
@@ -229,13 +249,6 @@ void free_ast(ASTNode* node) {
             WhileLoopNode* n = (WhileLoopNode*)node;
             free_ast(n->condition);
             free_ast(n->body);
-            break;
-        }
-
-        case Reassign_Node: {
-            ReassignNode* n = (ReassignNode*)node;
-            free(n->name);
-            free_ast(n->value);
             break;
         }
     }
@@ -323,6 +336,14 @@ void print_ast(ASTNode* node, int indent_level) {
             break;
         }
 
+        case Reassign_Node: {
+            ReassignNode* n = (ReassignNode*)node;
+            printf("Reassign:\n");
+            printf("%*s%s := \n", (indent_level + 1) * 2, "", n->name);
+            print_ast(n->value, indent_level + 1);
+            break;
+        }
+
         case Conditional_Node: {
             ConditionalNode* n = (ConditionalNode*)node;
             printf("Conditional:\n");
@@ -360,14 +381,6 @@ void print_ast(ASTNode* node, int indent_level) {
             print_ast(n->condition, indent_level + 2);
             printf("%*sBody:\n", (indent_level + 1) * 2, "");
             print_ast(n->body, indent_level + 2);
-            break;
-        }
-
-        case Reassign_Node: {
-            ReassignNode* n = (ReassignNode*)node;
-            printf("Reassign:\n");
-            printf("%*s%s := \n", (indent_level + 1) * 2, "", n->name);
-            print_ast(n->value, indent_level + 1);
             break;
         }
 

@@ -1,0 +1,5 @@
+let a = 5, b = 10, c = 20 in {
+    print(a+b);
+    print(b*c);
+    print(c/a);
+}

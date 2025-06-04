@@ -22,6 +22,7 @@ typedef enum {
     Conditional_Node,
     Function_Call_Node,
     While_Loop_Node,
+    Reassign_Node,
 } NodeType;
 
 typedef enum {
@@ -121,7 +122,12 @@ typedef struct WhileLoopNode
     ASTNode* body;
 }WhileLoopNode;
 
-
+typedef struct {
+    ASTNode base;
+    char* name;
+    ASTNode* value;
+    SymbolTable* scope;
+} ReassignNode;
 
 ASTNode* make_number_literal_node(double value);
 ASTNode* make_boolean_literal_node(int value);
@@ -133,6 +139,7 @@ ASTNode* make_let_node(SymbolTable* scope, ASTNode* body);
 ASTNode* make_variable_node(char* name, SymbolTable* scope);
 ASTNode* make_conditional_node(ASTNode* condition, ASTNode* if_branch,  ASTNode** elif_conditions, ASTNode** elif_branches, int elif_count, ASTNode* else_branch);
 ASTNode* make_function_call_node(char* name, ASTNode** arguments, int arg_count);
+ASTNode* make_reassign_node(char* name, ASTNode* value, SymbolTable* scope);
 ASTNode* make_while_loop_node(ASTNode* condition, ASTNode* body);
 void print_ast(ASTNode* node, int indent_level);
 void free_ast(ASTNode* node);

@@ -1,0 +1,3 @@
+let number = 42 in
+    let text = "The meaning of life is" in
+        print(text @ number);

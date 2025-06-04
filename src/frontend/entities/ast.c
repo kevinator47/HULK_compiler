@@ -126,15 +126,14 @@ ASTNode* make_conditional_node(ASTNode* condition, ASTNode* if_branch, ASTNode**
     return (ASTNode*)node;
 }
 
-ASTNode* make_while_loop_node(ASTNode* condition, ASTNode* body){
-    WhileLoopNode* node = malloc(sizeof(WhileLoopNode));
-    if(!node) return NULL;
-
-    node->base.type = While_Loop_Node;
+ASTNode* make_reassign_node(char* name, ASTNode* value, SymbolTable* scope) {
+    ReassignNode* node = malloc(sizeof(ReassignNode));
+    if (!node) return NULL;
+    node->base.type = Reassign_Node;
     node->base.accept = generic_ast_accept;
-    node->condition = condition;
-    node->body = body;
-
+    node->name = strdup(name);
+    node->value = value;
+    node->scope = scope;
     return (ASTNode*)node;
 }
 
@@ -149,6 +148,18 @@ ASTNode* make_function_call_node(char* name, ASTNode** arguments, int arg_count)
     memcpy(node->arguments, arguments, sizeof(ASTNode*) * arg_count);
     node->arg_count = arg_count;
     
+    return (ASTNode*)node;
+}
+
+ASTNode* make_while_loop_node(ASTNode* condition, ASTNode* body){
+    WhileLoopNode* node = malloc(sizeof(WhileLoopNode));
+    if(!node) return NULL;
+
+    node->base.type = While_Loop_Node;
+    node->base.accept = generic_ast_accept;
+    node->condition = condition;
+    node->body = body;
+
     return (ASTNode*)node;
 }
 
@@ -218,6 +229,13 @@ void free_ast(ASTNode* node) {
             WhileLoopNode* n = (WhileLoopNode*)node;
             free_ast(n->condition);
             free_ast(n->body);
+            break;
+        }
+
+        case Reassign_Node: {
+            ReassignNode* n = (ReassignNode*)node;
+            free(n->name);
+            free_ast(n->value);
             break;
         }
     }
@@ -332,6 +350,24 @@ void print_ast(ASTNode* node, int indent_level) {
             for (int i = 0; i < n->arg_count; i++) {
                 print_ast(n->arguments[i], indent_level + 2);
             }
+            break;
+        }
+
+        case While_Loop_Node: {
+            WhileLoopNode* n = (WhileLoopNode*)node;
+            printf("While Loop:\n");
+            printf("%*sCondition:\n", (indent_level + 1) * 2, "");
+            print_ast(n->condition, indent_level + 2);
+            printf("%*sBody:\n", (indent_level + 1) * 2, "");
+            print_ast(n->body, indent_level + 2);
+            break;
+        }
+
+        case Reassign_Node: {
+            ReassignNode* n = (ReassignNode*)node;
+            printf("Reassign:\n");
+            printf("%*s%s := \n", (indent_level + 1) * 2, "", n->name);
+            print_ast(n->value, indent_level + 1);
             break;
         }
 

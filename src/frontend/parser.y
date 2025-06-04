@@ -63,7 +63,8 @@ Visitor* visitor;
 %token LET IN ASSIGN
 %token IF ELIF ELSE
 %token WHILE
-%token FUNCTION ARROW
+%token FUNCTION ARROW REASSIGN
+
 
 %type <node> Statement Expression BlockExpr
 %type <node_list> StatementList
@@ -93,6 +94,7 @@ Visitor* visitor;
 %left MUL DIV MOD
 %right POW
 %right NOT
+%right REASSIGN
 
 %%
 
@@ -276,20 +278,29 @@ T           : NUMBER                    { $$ = make_number_literal_node($1); }
             | BlockExpr                 { $$ = $1; }
             | NOT T                     { $$ = make_unary_op_literal_node($2, NOT_TK); }
             | SUB T                     { $$ = make_unary_op_literal_node($2, MINUS_TK); }
-            | ID IDRest                 { 
-                                            if ($2.count == -1) {
-                                            // Es una variable normal
-                                                $$ = make_variable_node($1, current_scope);
-                                            } else {
-                                                // Es una llamada a función
-                                                $$ = make_function_call_node($1, $2.nodes, $2.count);
-                                                free($2.nodes);
-                                            }
-                                        }
+            | ID IDRest {
+                if ($2.count == -2) {
+                    // Es una reasignación
+                    $$ = make_reassign_node(strdup($1), $2.nodes[0], current_scope);
+                    free($2.nodes);
+                } else if ($2.count == -1) {
+                    // Es una variable normal
+                    $$ = make_variable_node(strdup($1), current_scope);
+                } else {
+                    // Es una llamada a función
+                    $$ = make_function_call_node(strdup($1), $2.nodes, $2.count);
+                    free($2.nodes);
+                }
+            }
             ;
 
-IDRest      : LPAREN Arguments RPAREN  { $$ = $2; }
-            | /* empty */              { $$.count = -1; $$.nodes = NULL; }
+IDRest
+            : REASSIGN Expression
+                { $$.count = -2; $$.nodes = malloc(sizeof(ASTNode*)); $$.nodes[0] = $2; }
+            | LPAREN Arguments RPAREN
+                { $$.count = $2.count; $$.nodes = $2.nodes; }
+            | /* empty */
+                { $$.count = -1; $$.nodes = NULL; }
             ;
 
 Arguments   : /* empty */              { $$.nodes = NULL; $$.count = 0; }

@@ -49,6 +49,7 @@ id          {letter}({letter}|{digit}|_)*
 "@@"                { return DCONCAT; }
 "{"                 { return LBRACKET; }
 "}"                 { return RBRACKET; }
+":="                { return REASSIGN; }
 "=>"                { return ARROW; }
 ";"                 { return SEMICOLON; }
 ","                 { return COMMA; }

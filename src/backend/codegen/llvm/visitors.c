@@ -1,4 +1,3 @@
-
 #include "visitors.h"
 #include <stdio.h>
 
@@ -31,7 +30,7 @@ LLVMValueRef visit_StringLiteral_impl(LLVMCodeGenerator* self, StringLiteralNode
         LLVMArrayType(LLVMInt8TypeInContext(self->context), strlen(node->value) + 1), 
         global_var, indices, 2, "stringPtr");
 }
-LLVMValueRef visit_UnaryOp_impl(LLVMCodeGenerator* self, UnaryOpNode* node) {
+LLVMValueRef visit_UnaryOp_impl(LLVMCodeGenerator* self, UnaryOperationNode* node) {
     LLVMValueRef operand_val = node->operand->accept(node->operand, self);
     if (!operand_val) {
         fprintf(stderr, "Error: No se pudo generar el valor del operando para la operación unaria.\n");
@@ -40,7 +39,7 @@ LLVMValueRef visit_UnaryOp_impl(LLVMCodeGenerator* self, UnaryOpNode* node) {
 
     LLVMTypeRef type = LLVMTypeOf(operand_val);
 
-    switch (node->operation) {
+    switch (node->operator) {
         case MINUS_TK:
             if (LLVMGetTypeKind(type) == LLVMDoubleTypeKind) {
                 return LLVMBuildFNeg(self->builder, operand_val, "negateTmp");
@@ -56,13 +55,13 @@ LLVMValueRef visit_UnaryOp_impl(LLVMCodeGenerator* self, UnaryOpNode* node) {
             return NULL;
 
         default:
-            fprintf(stderr, "Error: Operador unario desconocido %d.\n", node->operation);
+            fprintf(stderr, "Error: Operador unario desconocido %d.\n", node->operator);
             return NULL;
     }
 }
 
-LLVMValueRef visit_BinaryOp_impl(LLVMCodeGenerator* self, BinaryOpNode* node) {
-    printf("[visit_BinaryOp_impl] Operación: %d\n", node->operation);
+LLVMValueRef visit_BinaryOp_impl(LLVMCodeGenerator* self, BinaryOperationNode* node) {
+    printf("[visit_BinaryOp_impl] Operación: %d\n", node->operator);
     LLVMValueRef left_val = node->left->accept(node->left, self);
     LLVMValueRef right_val = node->right->accept(node->right, self);
 
@@ -85,7 +84,7 @@ LLVMValueRef visit_BinaryOp_impl(LLVMCodeGenerator* self, BinaryOpNode* node) {
     // --- Operaciones entre números (double) ---
     if (LLVMGetTypeKind(left_type) == LLVMDoubleTypeKind && 
         LLVMGetTypeKind(right_type) == LLVMDoubleTypeKind) {
-        switch (node->operation) {
+        switch (node->operator) {
             case PLUS_TK:
                 return LLVMBuildFAdd(self->builder, left_val, right_val, "addtmp");
             case MINUS_TK:
@@ -103,7 +102,7 @@ LLVMValueRef visit_BinaryOp_impl(LLVMCodeGenerator* self, BinaryOpNode* node) {
     // --- Operaciones entre booleanos (int1) ---
     if (LLVMGetTypeKind(left_type) == LLVMIntegerTypeKind && LLVMGetIntTypeWidth(left_type) == 1 &&
         LLVMGetTypeKind(right_type) == LLVMIntegerTypeKind && LLVMGetIntTypeWidth(right_type) == 1) {
-        switch (node->operation) {
+        switch (node->operator) {
             case AND_TK:
                 return LLVMBuildAnd(self->builder, left_val, right_val, "andtmp");
             case OR_TK:

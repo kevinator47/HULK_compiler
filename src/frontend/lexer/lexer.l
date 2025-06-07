@@ -1,10 +1,15 @@
 %{
-#include "entities/ast.h"
+#include "../common/common.h"
+#include "../ast/ast.h"
 #include "parser.tab.h"
 #include <string.h>
+#include <stdlib.h>
+
 
 void yyerror(const char*);
 %}
+
+%option noinput nounput
 
 delim       [ \t\n]
 ws          {delim}+
@@ -15,26 +20,24 @@ string      \"([^"\\]|\\.)*\"
 id          {letter}({letter}|{digit}|_)*
 
 %%
-
-{ws}                { /* Ignorar */ }            
+{ws}                { /* Ignorar espacios */ }
 "true"|"false"      { yylval.ival = strcmp(yytext, "true") == 0; return BOOLEAN; }
-"let"               { return LET; }
-"in"                { return IN; }
 "if"                { return IF; }
 "elif"              { return ELIF; }
 "else"              { return ELSE; }
-"function"          { return FUNCTION; }
 "while"             { return WHILE; }
-{id}                { yylval.sval = strdup(yytext); return ID; }
+"let"               { return LET; }
+"in"                { return IN; }
+"function"          { return FUNCTION; }
 {number}            { yylval.dval = atof(yytext); return NUMBER; }
+{id}                { yylval.sval = strdup(yytext); return ID; }
+";"                 { return SEMICOLON; }
 "+"                 { return ADD; }
 "-"                 { return SUB; }
 "*"                 { return MUL; }
 "/"                 { return DIV; }
 "%"                 { return MOD; }
 "^"|"**"            { return POW; }
-"("                 { return LPAREN; }
-")"                 { return RPAREN; }
 "&"                 { return AND; }
 "|"                 { return OR; }
 "!"                 { return NOT; }
@@ -44,18 +47,19 @@ id          {letter}({letter}|{digit}|_)*
 "<="                { yylval.token = LE_TK; return COMP; }
 "=="                { yylval.token = EQ_TK; return COMP; }
 "!="                { yylval.token = NE_TK; return COMP; }
+"=>"                { return ARROW;}
 "="                 { return ASSIGN; }
 "@"                 { return CONCAT; }
 "@@"                { return DCONCAT; }
+"("                 { return LPAREN; }
+")"                 { return RPAREN; }
 "{"                 { return LBRACKET; }
 "}"                 { return RBRACKET; }
-":="                { return REASSIGN; }
-"=>"                { return ARROW; }
-";"                 { return SEMICOLON; }
 ","                 { return COMMA; }
+":="                { return REASSIGN; }
 {string}            {
-                        yytext[strlen(yytext)-1] = '\0';  // remove ending quote
                         char* src = yytext + 1;           // skip starting quote
+                        yytext[strlen(yytext)-1] = '\0';  // remove ending quote
                         char* dst = malloc(strlen(src) + 1);
                         char* result = dst;
                         
@@ -72,8 +76,8 @@ id          {letter}({letter}|{digit}|_)*
                         yylval.sval = result;
                         return STRING;
                     }
-%%
 
-int yywrap(void) {
-    return 1;
+%%
+int yywrap() {
+    return 1; // Indica que no hay más entradas
 }

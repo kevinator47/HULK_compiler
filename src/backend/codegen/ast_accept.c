@@ -1,6 +1,6 @@
 
-#include "../entities/ast.h" // Incluye las definiciones de nodos y NodeType
-#include "../codegen/llvm/generator.h" // Incluye la definicion de LLVMCodeGenerator
+#include "../frontend/ast/ast.h" // Incluye las definiciones de nodos y NodeType
+#include "llvm/generator.h" // Incluye la definicion de LLVMCodeGenerator
 
 LLVMValueRef generic_ast_accept(struct ASTNode* self, struct LLVMCodeGenerator* visitor) {
     if (!self || !visitor) {
@@ -27,22 +27,22 @@ LLVMValueRef generic_ast_accept(struct ASTNode* self, struct LLVMCodeGenerator* 
                 return visitor->visit_StringLiteral(visitor, (StringLiteralNode*)self);
             break;
 
-        case Unary_Op_Node:
+        case AST_Node_Unary_Operation:
              if (visitor->visit_UnaryOp)
-                return visitor->visit_UnaryOp(visitor, (UnaryOpNode*)self);
+                return visitor->visit_UnaryOp(visitor, (UnaryOperationNode*)self);
             break;
 
-        case Binary_Op_Node:
+        case AST_Node_Binary_Operation:
              if (visitor->visit_BinaryOp)
-                return visitor->visit_BinaryOp(visitor, (BinaryOpNode*)self);
+                return visitor->visit_BinaryOp(visitor, (BinaryOperationNode*)self);
             break;
 
-        case Expression_Block_Node:
+        case AST_Node_Expression_Block:
              if (visitor->visit_ExpressionBlock)
                 return visitor->visit_ExpressionBlock(visitor, (ExpressionBlockNode*)self);
             break;
 
-        case Let_Node:
+        case AST_Node_Let_In:
             // Por ahora, solo manejaremos expresiones. Los nodos no implementados devuelven NULL.
             // En la implementacion completa, harias el cast y llamarias a visitor->visit_Let
              if (visitor->visit_Let) {
@@ -52,7 +52,7 @@ LLVMValueRef generic_ast_accept(struct ASTNode* self, struct LLVMCodeGenerator* 
              }
             break;
 
-        case Variable_Node:
+        case AST_Node_Variable:
              if (visitor->visit_Variable) {
                  // return visitor->visit_Variable(visitor, (VariableNode*)self); // Implementacion completa
                   fprintf(stderr, "Nodo Variable_Node no implementado en generacion de codigo.\n"); // Mensaje temporal
@@ -60,7 +60,7 @@ LLVMValueRef generic_ast_accept(struct ASTNode* self, struct LLVMCodeGenerator* 
              }
             break;
 
-         case Conditional_Node:
+         case AST_Node_Conditional:
              if (visitor->visit_Conditional) {
                  // return visitor->visit_Conditional(visitor, (ConditionalNode*)self); // Implementacion completa
                   fprintf(stderr, "Nodo Conditional_Node no implementado en generacion de codigo.\n"); // Mensaje temporal
@@ -68,7 +68,7 @@ LLVMValueRef generic_ast_accept(struct ASTNode* self, struct LLVMCodeGenerator* 
              }
             break;
 
-         case Function_Call_Node:
+         case AST_Node_Function_Call:
              if (visitor->visit_FunctionCall) {
                  // return visitor->visit_FunctionCall(visitor, (FunctionCallNode*)self); // Implementacion completa
                   fprintf(stderr, "Nodo Function_Call_Node no implementado en generacion de codigo.\n"); // Mensaje temporal

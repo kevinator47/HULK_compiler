@@ -1,9 +1,8 @@
 // En codegen/llvm_codegen.c
-
 #include "generator.h"
 #include "visitors.h"
 #include "scope_stack.h"
-#include "../entities/ast.h"
+#include "../../../frontend/ast/ast.h"
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>

@@ -19,9 +19,7 @@ struct LLVMCodeGenerator {
     ScopeStack* scope_stack; 
 
     // Punteros a las implementaciones de visit_ para CADA tipo de nodo AST
-    LLVMValueRef (*visit_NumberLiteral)(LLVMCodeGenerator* self, NumberLiteralNode* node);
-    LLVMValueRef (*visit_BooleanLiteral)(LLVMCodeGenerator* self, BooleanLiteralNode* node);
-    LLVMValueRef (*visit_StringLiteral)(LLVMCodeGenerator* self, StringLiteralNode* node);
+    LLVMValueRef (*visit_Literal)(LLVMCodeGenerator* self, LiteralNode* node);
     LLVMValueRef (*visit_UnaryOp)(LLVMCodeGenerator* self, UnaryOperationNode* node);
     LLVMValueRef (*visit_BinaryOp)(LLVMCodeGenerator* self, BinaryOperationNode* node);
     LLVMValueRef (*visit_ExpressionBlock)(LLVMCodeGenerator* self, ExpressionBlockNode* node);

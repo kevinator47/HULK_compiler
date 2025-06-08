@@ -5,7 +5,7 @@
 #include "frontend/hulk_type/type_table.h"
 #include "frontend/semantic_check/semantic_visitor.h"
 #include "frontend/ast/ast.h"
-#include "../build/parser/parser.tab"
+#include "../build/parser.tab.h"
 
 // Declaraciones externas del parser
 extern int yyparse();
@@ -14,7 +14,7 @@ extern ASTNode* root_node;
 
 int main(int argc, char **argv) {
     //  1. Inicializacion tabla de simbolos
-    type_table = create_type_table();
+    TypeTable* type_table = create_type_table();
 
     // 2. Creacion tipos builtin
     TypeDescriptor *number_type = create_builtin_type(HULK_Type_Number, "number");
@@ -62,6 +62,7 @@ int main(int argc, char **argv) {
     }
     if (yyin != stdin) fclose(yyin);
 
+    print_ast_node(root_node, 0); // Imprimir el AST para depuración
     if (root_node == NULL) {
     fprintf(stderr, "El AST está vacío. No se generará código LLVM.\n");
     return 1;

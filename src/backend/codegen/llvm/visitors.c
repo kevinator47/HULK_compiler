@@ -3,32 +3,22 @@
 
 // --- Implementaciones de los métodos visit_ para Expresiones ---
 
-LLVMValueRef visit_NumberLiteral_impl(LLVMCodeGenerator* self, NumberLiteralNode* node) {
-    LLVMTypeRef double_type = LLVMDoubleTypeInContext(self->context);
-    return LLVMConstReal(double_type, node->value);
-}
+LLVMValueRef visit_Literal_impl(LLVMCodeGenerator* self, LiteralNode* node) {
+    switch (node->base.return_type->tag) {
+        case HULK_Type_Number:
+            return LLVMConstReal(LLVMDoubleTypeInContext(self->context), node->value.number_value);
 
-LLVMValueRef visit_BooleanLiteral_impl(LLVMCodeGenerator* self, BooleanLiteralNode* node) {
-    LLVMTypeRef bool_type = LLVMInt1TypeInContext(self->context);
-    return LLVMConstInt(bool_type, node->value ? 1 : 0, 0);
-}
+        case HULK_Type_Boolean:
+            return LLVMConstInt(LLVMInt1TypeInContext(self->context), node->value.bool_value ? 1 : 0, 0);
 
-LLVMValueRef visit_StringLiteral_impl(LLVMCodeGenerator* self, StringLiteralNode* node) {
-    LLVMValueRef global_string_constant = LLVMConstString(node->value, strlen(node->value), 1);
-    LLVMValueRef global_var = LLVMAddGlobal(self->module, 
-        LLVMArrayType(LLVMInt8TypeInContext(self->context), strlen(node->value) + 1), 
-        ".str");
-    LLVMSetInitializer(global_var, global_string_constant);
-    LLVMSetGlobalConstant(global_var, 1);
-    LLVMSetLinkage(global_var, LLVMPrivateLinkage);
+        case HULK_Type_String:
+            // Más simple y seguro, maneja el global y el puntero automáticamente
+            return LLVMBuildGlobalStringPtr(self->builder, node->value.string_value, "str");
 
-    LLVMValueRef indices[] = {
-        LLVMConstInt(LLVMInt32TypeInContext(self->context), 0, 0),
-        LLVMConstInt(LLVMInt32TypeInContext(self->context), 0, 0)
-    };
-    return LLVMBuildInBoundsGEP2(self->builder, 
-        LLVMArrayType(LLVMInt8TypeInContext(self->context), strlen(node->value) + 1), 
-        global_var, indices, 2, "stringPtr");
+        default:
+            fprintf(stderr, "Error: Tipo de literal no soportado en visit_Literal_impl.\n");
+            return NULL;
+    }
 }
 LLVMValueRef visit_UnaryOp_impl(LLVMCodeGenerator* self, UnaryOperationNode* node) {
     LLVMValueRef operand_val = node->operand->accept(node->operand, self);

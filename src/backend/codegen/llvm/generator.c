@@ -29,9 +29,7 @@ LLVMCodeGenerator* create_llvm_code_generator(const char* module_name) {
     }
 
     // Asignar las implementaciones de los metodos visit_
-    generator->visit_NumberLiteral = visit_NumberLiteral_impl;
-    generator->visit_BooleanLiteral = visit_BooleanLiteral_impl;
-    generator->visit_StringLiteral = visit_StringLiteral_impl;
+    generator->visit_Literal = visit_Literal_impl;
     generator->visit_UnaryOp = visit_UnaryOp_impl;
     generator->visit_BinaryOp = visit_BinaryOp_impl;
 

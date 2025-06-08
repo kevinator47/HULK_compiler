@@ -18,13 +18,14 @@ CFLAGS = -Wall -Wextra -g \
 	$(LLVM_CFLAGS)
 
 # Archivos fuente
-SRC = $(wildcard src/frontend/*.c) \
+SRC = src/main.c \
+	  $(wildcard src/frontend/*.c) \
       $(wildcard src/frontend/ast/*.c) \
       $(wildcard src/frontend/hulk_type/*.c) \
       $(wildcard src/frontend/scope/*.c) \
       $(wildcard src/frontend/semantic_check/*.c) \
       $(wildcard src/backend/codegen/*.c) \
-      $(wildcard src/backend/codegen/llvm/*.c)
+      $(wildcard src/backend/codegen/llvm/*.c) \
 
 # Ejecutable
 BIN = build/hulk_compiler
@@ -77,6 +78,11 @@ $(LEX_O): $(LEX_C)
 $(YACC_O): $(YACC_C)
 	$(CC) $(CFLAGS) -c $< -o $@
 
+# Compilar main
+build/main.o: src/main.c build/parser.tab.h
+	@mkdir -p $(dir $@)
+	$(CC) $(CFLAGS) -c $< -o $@
+
 # Ejecutar
 run: $(BIN)
 	./$(BIN)
@@ -84,4 +90,10 @@ run: $(BIN)
 # Limpiar
 clean:
 	rm -rf build
+
+llvm: $(BIN)
+	@echo "Generando código LLVM para script.hulk..."
+	@./$(BIN) script.hulk
+	@echo "=== Código LLVM generado en output.ll ==="
+	@cat output.ll
 

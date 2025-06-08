@@ -11,20 +11,10 @@ LLVMValueRef generic_ast_accept(struct ASTNode* self, struct LLVMCodeGenerator* 
     // Usamos el campo 'type' para saber que tipo de nodo concreto es 'self'
     // y llamar al metodo 'visit_' correspondiente del visitor.
     switch (self->type) {
-        case Number_Literal_Node:
+        case AST_Node_Literal:
             // Casteamos y llamamos al metodo correspondiente
-            if (visitor->visit_NumberLiteral)
-                return visitor->visit_NumberLiteral(visitor, (NumberLiteralNode*)self);
-            break;
-
-        case Boolean_Literal_Node:
-             if (visitor->visit_BooleanLiteral)
-                return visitor->visit_BooleanLiteral(visitor, (BooleanLiteralNode*)self);
-            break;
-
-        case String_Literal_Node:
-             if (visitor->visit_StringLiteral)
-                return visitor->visit_StringLiteral(visitor, (StringLiteralNode*)self);
+            if (visitor->visit_Literal)
+                return visitor->visit_Literal(visitor, (LiteralNode*)self);
             break;
 
         case AST_Node_Unary_Operation:

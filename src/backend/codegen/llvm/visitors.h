@@ -4,9 +4,7 @@
 #include "generator.h"
 
 // Declaraciones de las funciones visitor para cada tipo de nodo AST
-LLVMValueRef visit_NumberLiteral_impl(LLVMCodeGenerator* self, NumberLiteralNode* node);
-LLVMValueRef visit_BooleanLiteral_impl(LLVMCodeGenerator* self, BooleanLiteralNode* node);
-LLVMValueRef visit_StringLiteral_impl(LLVMCodeGenerator* self, StringLiteralNode* node);
+LLVMValueRef visit_Literal_impl(LLVMCodeGenerator* self, LiteralNode* node);
 LLVMValueRef visit_UnaryOp_impl(LLVMCodeGenerator* self, UnaryOperationNode* node);
 LLVMValueRef visit_BinaryOp_impl(LLVMCodeGenerator* self, BinaryOperationNode* node);
 LLVMValueRef visit_ExpressionBlock_impl(LLVMCodeGenerator* self, ExpressionBlockNode* node);

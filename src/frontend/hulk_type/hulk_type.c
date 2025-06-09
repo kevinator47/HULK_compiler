@@ -32,6 +32,12 @@ int is_builtin_type(const TypeDescriptor *type) {
            type->tag == HULK_Type_Undefined;
 }
 
+bool is_compatible(TypeDescriptor* t1 , TypeDescriptor *t2) {
+    //  TODO : add check if t2 if ancestor of t1
+    return (t1->tag == t2->tag || t2->tag == HULK_Type_Object);
+}
+
+
 void free_type_descriptor(TypeDescriptor *type) {
     // Libera la memoria de un TypeDescriptor.
     if (type) {

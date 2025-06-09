@@ -57,6 +57,7 @@ id          {letter}({letter}|{digit}|_)*
 "}"                 { return RBRACKET; }
 ","                 { return COMMA; }
 ":="                { return REASSIGN; }
+":"                 { return COLON; }
 {string}            {
                         char* src = yytext + 1;           // skip starting quote
                         yytext[strlen(yytext)-1] = '\0';  // remove ending quote

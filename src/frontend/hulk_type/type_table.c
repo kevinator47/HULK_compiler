@@ -19,7 +19,7 @@ void add_type(TypeTable *table, TypeDescriptor *type) {
     table->types[table->count++] = type;
 }
 
-TypeDescriptor *type_table_lookup(TypeTable *table, const char *name) {
+TypeDescriptor* type_table_lookup(TypeTable *table, const char *name) {
     for (int i = 0; i < table->count; i++) {
         if (strcmp(table->types[i]->type_name, name) == 0) {
             return table->types[i];

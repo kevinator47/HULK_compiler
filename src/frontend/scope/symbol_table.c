@@ -1,6 +1,6 @@
 #include "symbol_table.h"
 
-Symbol* create_symbol(const char* name, SymbolKind kind, TypeDescriptor* type, ASTNode* value, char** params_names, int params_count) {
+Symbol* create_symbol(const char* name, SymbolKind kind, TypeDescriptor* type, ASTNode* value) {
     Symbol* symbol = malloc(sizeof(Symbol));
     if (!symbol) {
         return NULL; // Error allocating memory
@@ -13,8 +13,6 @@ Symbol* create_symbol(const char* name, SymbolKind kind, TypeDescriptor* type, A
     symbol->kind = kind;
     symbol->type = type;
     symbol->value = value; // Puede ser NULL si no hay un nodo AST asociado
-    symbol->params_names = params_names; // Puede ser NULL si no hay parámetros
-    symbol->params_count = params_count; // Número de parámetros, puede ser 0 si no hay
     return symbol;
 }
 
@@ -89,7 +87,7 @@ Symbol* lookup_function_by_signature(SymbolTable* table, const char* name, int a
     Symbol* func_symbol = lookup_symbol(table, name, true);
 
     if(!func_symbol || (func_symbol->kind != SYMBOL_FUNCTION)) return NULL;
-    if(func_symbol->params_count != arg_count) return NULL;
+    if(((FunctionDefinitionNode*)func_symbol->value)->param_count != arg_count) return NULL;
     return func_symbol;
 }
 

@@ -157,9 +157,10 @@ void free_function_definition_node(FunctionDefinitionNode *node) {
 
     free(node->name);
     for (int i = 0; i < node->param_count; i++) {
-        free(node->params_names[i]);
+        free(node->params[i]->name);
+        free(node->params[i]);
     }
-    free(node->params_names);
+    free(node->params);
     free_ast_node(node->body);
     free(node);
 }

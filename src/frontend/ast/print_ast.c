@@ -238,10 +238,10 @@ void print_function_definition_node(FunctionDefinitionNode *node, int indent) {
     printf("Parameters: ");
     for (int i = 0; i < node->param_count; i++) {
         if( i == node->param_count - 1)
-            printf("%s \n", node->params_names[i]);
+            printf("%s \n", node->params[i]->name);
         else
         {
-            printf("%s, ", node->params_names[i]);
+            printf("%s, ", node->params[i]->name);
         }        
     }
 

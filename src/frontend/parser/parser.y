@@ -2,16 +2,24 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <ctype.h>
 #include "../ast/ast.h"
 #include "../common/common.h"
 #include "../hulk_type/type_table.h"
-
 
 extern int yylex();
 void yyerror(const char *s);
 
 ASTNode *root_node;
 TypeTable *type_table;
+
+char* strtolower(char* str) {
+    char* result = strdup(str);
+    for (int i = 0; result[i]; i++) {
+        result[i] = tolower(result[i]);
+    }
+    return result;
+}
 
 %}
 
@@ -24,19 +32,20 @@ TypeTable *type_table;
     HULK_Op token;
     struct { struct ASTNode** nodes;  int count;} node_list;
     struct { struct VariableAssigment* list; int count; } var_assig_list;
-    struct { char* name; char** params; int count;} function_header;
-    struct { char** names ; int count;} param_list;
+    struct { char* name; char* type;} param_info;
+    struct { char** names ; char** types; int count;} param_list_info;
+    struct { char* name; char** param_names; char** param_types ; int param_count; char* return_type;} function_header;
     
 }
 
 %token <dval> NUMBER
 %token <ival> BOOLEAN
-%token <sval> STRING ID
+%token <sval> STRING ID 
 %token <token> COMP
 %token ADD SUB MUL DIV MOD POW
 %token CONCAT DCONCAT
 %token AND OR NOT
-%token SEMICOLON COMMA LPAREN RPAREN LBRACKET RBRACKET
+%token SEMICOLON COLON COMMA LPAREN RPAREN LBRACKET RBRACKET
 %token IF ELIF ELSE WHILE LET IN
 %token ASSIGN REASSIGN FUNCTION ARROW
 
@@ -46,7 +55,9 @@ TypeTable *type_table;
 %type<var_assig> VariableAssigment
 %type<var_assig_list> VariableAssigmentList
 %type<function_header> FunctionHeader
-%type<param_list> ParameterList
+%type<sval> OptionalType
+%type<param_info> Parameter
+%type<param_list_info> ParameterList
 
 %left OR
 %left AND
@@ -64,36 +75,65 @@ Program                 : FunctionDefList OptionalExpression OptionalEnd { root_
                         ;
 
 FunctionDefList         : FunctionDefinition FunctionDefList     
-                        { $$ = append_function_definition_to_list((FunctionDefinitionListNode*)$2, (FunctionDefinitionNode*)$1); }   // [OK]
-                        | /* vacío */                            { $$ = create_function_definition_list_node(type_table) ; }    // [OK]
+                        { $$ = append_function_definition_to_list(
+                          (FunctionDefinitionListNode*)$2, 
+                          (FunctionDefinitionNode*)$1); 
+                        } 
+                        | /* vacío */                            { $$ = create_function_definition_list_node(type_table) ; } 
                         ;
 
-FunctionDefinition      : FunctionHeader FunctionBody            { $$ = create_function_definition_node($1.name, $1.params, $1.count, $2, type_table); }
+FunctionDefinition      : FunctionHeader FunctionBody 
+                        { $$ = create_function_definition_node(
+                          $1.name,
+                          $1.param_names,
+                          $1.param_types,
+                          $1.param_count,
+                          $1.return_type,
+                          $2,
+                          type_table);
+                        }
                         ;
 
-FunctionHeader          : FUNCTION ID LPAREN ParameterList RPAREN
+FunctionHeader          : FUNCTION ID LPAREN ParameterList RPAREN OptionalType 
                         {
                             $$.name = $2;
-                            $$.params = $4.names;
-                            $$.count = $4.count;
+                            $$.param_names = $4.names;
+                            $$.param_types = $4.types;
+                            $$.param_count = $4.count;
+                            $$.return_type = $6;
                         }
                         ;
 
-ParameterList           : /* empty */                             { $$.names = NULL; $$.count = 0; }
-                        | ID
+OptionalType      : /* empty */                             {$$ = "undefined";}
+                        | COLON ID                          {$$ = strtolower($2);}
+                        ;
+
+ParameterList           : /* empty */ 
+                        {
+                            $$.names = NULL;
+                            $$.types = NULL;
+                            $$.count = 0;
+                        }
+                        | Parameter
                         {
                             $$.names = malloc(sizeof(char*));
-                            $$.names[0] = $1;
+                            $$.types = malloc(sizeof(char*));
+                            $$.names[0] = $1.name;
+                            $$.types[0] = $1.type;
                             $$.count = 1;
                         }
-                        
-                        | ParameterList COMMA ID
+                        | ParameterList COMMA Parameter 
                         {
                             int new_count = $1.count + 1;
                             $$.names = realloc($1.names, new_count * sizeof(char*));
-                            $$.names[new_count - 1] = $3;
+                            $$.types = realloc($1.types, new_count * sizeof(char*));
+                            $$.names[new_count - 1] = $3.name;
+                            $$.types[new_count - 1] = $3.type;
                             $$.count = new_count;
                         }
+                        ;
+
+Parameter               : ID OptionalType                    { $$.name = $1;   $$.type = $2; }
                         ;
 
 FunctionBody            : ARROW Expression SEMICOLON         { $$ = $2;}

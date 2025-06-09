@@ -17,10 +17,6 @@ typedef struct Symbol {
     SymbolKind kind;
     TypeDescriptor* type;
     ASTNode* value;
-
-    // Solo para funciones
-    char** params_names;
-    int params_count;
 } Symbol;
 typedef struct SymbolTable {
     // Tabla que contiene los simbolos de un scope.
@@ -31,7 +27,7 @@ typedef struct SymbolTable {
 } SymbolTable;
 
 // Prototipos para simbolos
-Symbol* create_symbol(const char *name, SymbolKind kind, TypeDescriptor* type, ASTNode* value, char **params_names, int params_count);
+Symbol* create_symbol(const char *name, SymbolKind kind, TypeDescriptor* type, ASTNode* value);
 void free_symbol(Symbol *symbol);
 
 // Prototipos para tabla de simbolos

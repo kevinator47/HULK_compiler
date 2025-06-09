@@ -175,28 +175,29 @@ ASTNode* create_reassign_node(char *name, ASTNode *value, TypeTable *table) {
     return (ASTNode*) node;
 }
 
-ASTNode* create_function_definition_node(char *name, char **params_names, int param_count, ASTNode *body, TypeTable *table) {
-    FunctionDefinitionNode *node = malloc(sizeof(FunctionDefinitionNode));
+ASTNode* create_function_definition_node(const char* name, char** param_names, char** param_types, int param_count, char* return_type, ASTNode* body, TypeTable* table) {
+    FunctionDefinitionNode* node = malloc(sizeof(FunctionDefinitionNode));
     if (!node) return NULL;
 
     node->base.type = AST_Node_Function_Definition;
     node->base.return_type = type_table_lookup(table, "null");
     node->base.accept = generic_ast_accept;
+
     node->name = strdup(name);
+    node->param_count = param_count;
+
+    node->params = malloc(sizeof(Param*) * param_count);
+    node->body = body;
     node->scope = NULL;
 
-    node->params_names = malloc(sizeof(char*) * param_count);
-    if (!node->params_names) {
-        free(node);
-        return NULL; // Error allocating memory
-    }
+    node->static_return_type = return_type;
 
     for (int i = 0; i < param_count; i++) {
-        node->params_names[i] = strdup(params_names[i]);
+        Param* param = malloc(sizeof(Param));
+        param->name = strdup(param_names[i]);
+        param->static_type = strdup(param_types[i]);
+        node->params[i] = param;
     }
-    
-    node->param_count = param_count;
-    node->body = body;
 
     return (ASTNode*) node;
 }
@@ -210,7 +211,7 @@ ASTNode* create_function_definition_list_node(TypeTable* table) {
     node->function_count = 0;
     return (ASTNode*) node;
 }
-
+    
 ASTNode* append_function_definition_to_list(FunctionDefinitionListNode* list, FunctionDefinitionNode* def) {
     list->base.accept = generic_ast_accept;
     list->functions = realloc(list->functions, sizeof(FunctionDefinitionNode*) * (list->function_count + 1));
@@ -219,13 +220,20 @@ ASTNode* append_function_definition_to_list(FunctionDefinitionListNode* list, Fu
     return (ASTNode*)list;
 }
 
-void register_func_params(FunctionDefinitionNode* node, SymbolTable* parent_scope, TypeTable* type_table) {
+void register_func_params(FunctionDefinitionNode* node, SymbolTable* parent_scope, TypeTable* table) {
     // Crea un nuevo scope para la función
     node->scope = create_symbol_table(parent_scope);
 
     // Agrega los parámetros al scope de la función
     for (int i = 0; i < node->param_count; i++) {
-        insert_symbol(node->scope, create_symbol(node->params_names[i], SYMBOL_PARAMETER, type_table_lookup(type_table, "any"), NULL, NULL, 0));
+        char* param_name = node->params[i]->name;
+        TypeDescriptor* param_type = type_table_lookup(table, node->params[i]->static_type);
+        if(!param_type)
+        {
+            fprintf(stderr, "Error: Undefined type \"%s\" \n", node->params[i]->static_type);
+            exit(1);
+        }
+        insert_symbol(node->scope, create_symbol(param_name, SYMBOL_PARAMETER, param_type, NULL));
     }
 }
 

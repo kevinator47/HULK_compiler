@@ -64,7 +64,7 @@ typedef struct ExpressionBlockNode {
     // Nodo que representa un bloque de expresiones en el AST
     ASTNode base;
     ASTNode **expressions;   // Array de expresiones dentro del bloque
-    int expression_count; // Número de expresiones en el bloque
+    int expression_count;    // Número de expresiones en el bloque
 } ExpressionBlockNode;
 
 typedef struct ConditionalNode {
@@ -106,13 +106,19 @@ typedef struct ReassignNode {
     SymbolTable* scope;
 }ReassignNode;
 
+typedef struct Param {
+    char* name ;        // nombre del parametro
+    char* static_type;  // nombre del tipo(no se puede usar TypeDescriptor* porque no estaran creados los definidos por el usuario)
+} Param ;
+
 typedef struct FunctionDefinitionNode {
     ASTNode base ;
     char* name;                         // Nombre de la función
     SymbolTable* scope;                 // Scope de la función(donde iran los parametros)
-    char** params_names;                // Nombres de los parámetros
+    Param** params;                     // Parametros
     int param_count;                    // Número de parámetros
-    ASTNode* body;                      // Cuerpo de la función
+    char* static_return_type;           // Tipo de retorno de la funcion
+    ASTNode* body;                      // Cuerpo de la función    
 } FunctionDefinitionNode;
 
 typedef struct FunctionDefinitionListNode {
@@ -149,13 +155,13 @@ ASTNode* create_while_loop_node(ASTNode *condition, ASTNode *body, TypeTable *ta
 ASTNode* create_let_in_node(VariableAssigment *assigments, int assigment_count, ASTNode *body, TypeTable *table); 
 ASTNode* create_variable_node(char *name, TypeTable *table);
 ASTNode* create_reassign_node(char *name, ASTNode *value, TypeTable *table);
-ASTNode* create_function_definition_node(char *name, char **params_names, int param_count, ASTNode *body, TypeTable *table);
+ASTNode* create_function_definition_node(const char* name, char** param_names, char** param_types, int param_count, char* return_type, ASTNode* body, TypeTable* table);
 ASTNode* create_function_definition_list_node(TypeTable *table);
 ASTNode* create_function_call_node(char* name, ASTNode** args, int arg_count, TypeTable *table);
 ASTNode* create_program_node(FunctionDefinitionListNode *function_list, ASTNode *root, TypeTable *table);
 
 void create_scope_let_in_node(LetInNode* node, SymbolTable* parent_scope);
-void register_func_params(FunctionDefinitionNode* node, SymbolTable* parent_scope, TypeTable* type_table);
+void register_func_params(FunctionDefinitionNode* node, SymbolTable* parent_scope, TypeTable* table);
 ASTNode* append_function_definition_to_list(FunctionDefinitionListNode* list, FunctionDefinitionNode* def);
 
 // Prototipos para imprimir nodos(Debug)

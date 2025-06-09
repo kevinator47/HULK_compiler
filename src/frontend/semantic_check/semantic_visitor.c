@@ -11,7 +11,7 @@ SemanticVisitor* init_semantic_visitor(TypeTable* type_table) {
 
 TypeDescriptor* semantic_visit(SemanticVisitor* visitor, ASTNode* node, SymbolTable* current_scope) {
     if(!node) {
-        return type_table_lookup(visitor->typeTable,"undefined");
+        return type_table_lookup(visitor->typeTable,"null");
     }
     
     switch (node->type)
@@ -23,7 +23,7 @@ TypeDescriptor* semantic_visit(SemanticVisitor* visitor, ASTNode* node, SymbolTa
     case AST_Node_Unary_Operation: {
         UnaryOperationNode* unary_node = (UnaryOperationNode*) node;
         semantic_visit(visitor, unary_node->operand, current_scope); // Visit the operand first
-        return check_semantic_unary_operation_node(unary_node, visitor->typeTable);
+        return check_semantic_unary_operation_node(unary_node);
         break;
     }
     case AST_Node_Binary_Operation: {
@@ -48,14 +48,14 @@ TypeDescriptor* semantic_visit(SemanticVisitor* visitor, ASTNode* node, SymbolTa
         if (conditional_node->else_branch) {
             semantic_visit(visitor, conditional_node->else_branch, current_scope); // Visit the else branch if it exists
         }
-        return check_semantic_conditional_node(conditional_node, visitor->typeTable);
+        return check_semantic_conditional_node(conditional_node);
         break;
     }
     case AST_Node_While_Loop: {
         WhileLoopNode* while_node = (WhileLoopNode*) node;
         semantic_visit(visitor, while_node->condition, current_scope); // Visit the condition first
         semantic_visit(visitor, while_node->body, current_scope); // Visit the body next
-        return check_semantic_while_loop_node(while_node, visitor->typeTable);
+        return check_semantic_while_loop_node(while_node);
         break;
     }
     case AST_Node_Let_In: {
@@ -68,7 +68,6 @@ TypeDescriptor* semantic_visit(SemanticVisitor* visitor, ASTNode* node, SymbolTa
             semantic_visit(visitor, assigment->value, let_in_node->scope);
             add_assigment_to_scope(let_in_node->scope, assigment); 
         }        
-
         // Visit the body
         semantic_visit(visitor, let_in_node->body, let_in_node->scope);
         return check_semantic_let_in_node(let_in_node);
@@ -91,10 +90,11 @@ TypeDescriptor* semantic_visit(SemanticVisitor* visitor, ASTNode* node, SymbolTa
     case AST_Node_Function_Definition_List: {
         FunctionDefinitionListNode* function_list_node = (FunctionDefinitionListNode*) node;
 
-        // Register each function definition in the current scope
+        // Register each function definition in the current scope and register it's params in it's own scope
         for (int i = 0; i < function_list_node->function_count; i++) {
             FunctionDefinitionNode* function_node = function_list_node->functions[i];
-            register_function_definition(function_node, current_scope);
+            register_function_definition(function_node, current_scope, visitor->typeTable);
+            register_func_params(function_node, current_scope, visitor->typeTable);
         }
 
         // Visit each function definition
@@ -108,49 +108,30 @@ TypeDescriptor* semantic_visit(SemanticVisitor* visitor, ASTNode* node, SymbolTa
     case AST_Node_Function_Definition: {
         FunctionDefinitionNode* function_node = (FunctionDefinitionNode*) node;
         
-        // Creates function's scope and register the parameters
-        register_func_params(function_node, current_scope, visitor->typeTable);
+        // TODO: inferencia de tipo sobre los parametros para determinar su tipo si no se especifica estaticamente
 
         // Visit the body of the function
         semantic_visit(visitor, function_node->body, function_node->scope);
-        TypeDescriptor* return_type = check_semantic_function_definition_node(function_node, visitor->typeTable);
+        check_semantic_function_definition_node(function_node, visitor->typeTable);
 
-        // Set the return type of the function in the global scope
-        set_symbol_return_type(current_scope, function_node->name, return_type);
-        return return_type;     
-    
+        // TODO: Set the return type of the function in the global scope(when inference)
+        
+        return type_table_lookup(visitor->typeTable,"null"); 
         break;
     }
     case AST_Node_Function_Call : {
         FunctionCallNode* func_call = (FunctionCallNode*) node;
+        
         // Set scope
         func_call->scope = current_scope;
 
-        // Find function declaration with the same signature
-        Symbol* func_definition = lookup_function_by_signature(current_scope, func_call->name, func_call->arg_count);
-        
-        if(!func_definition) {
-            fprintf(stderr, "Error: Undefined function '%s' with %d arguments\n", func_call->name, func_call->arg_count);
-            exit(1);
-        }
-
-        SymbolTable* def_scope = ((FunctionDefinitionNode*)func_definition->value)->scope;
-
-        // Visit each argument and check if it's type is compatible with the inferred one on the declaration
+        // Visit each argument
         for (int i = 0; i < func_call->arg_count; i++)
         {
-            TypeDescriptor* arg_type = semantic_visit(visitor, func_call->args[i], current_scope);
-            TypeDescriptor* expected_type = lookup_symbol(def_scope, func_definition->params_names[i], false)->type;
-            if(arg_type->tag != expected_type->tag && arg_type->tag != HULK_Type_Any && expected_type->tag != HULK_Type_Any)
-            {
-                fprintf(stderr, "Type error in argument %d of function '%s'\n", i, func_call->name);
-                exit(1);
-            }
+            semantic_visit(visitor, func_call->args[i] , current_scope);
         }
-        
-        // Set the return type to the declaration's return type
-        func_call->base.return_type = ((FunctionDefinitionNode*)func_definition->value)->body->return_type;
-        return func_call->base.return_type;
+
+        return check_semantic_function_call_node(func_call, current_scope);
         break;
     }
     case AST_Node_Program: {

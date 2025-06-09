@@ -40,5 +40,5 @@ int is_builtin_type(const TypeDescriptor* type);
 void free_type_descriptor(TypeDescriptor* type);
 void free_type_info(TypeInfo* info);
 void free_attribute(Attribute* attr);
-
+bool is_compatible(TypeDescriptor *t1, TypeDescriptor *t2);
 #endif // HULK_TYPE_H

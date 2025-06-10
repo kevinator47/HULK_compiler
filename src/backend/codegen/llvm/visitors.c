@@ -1,7 +1,6 @@
 #include "visitors.h"
+#include "utils.h"
 #include <stdio.h>
-
-LLVMTypeRef get_llvm_type_from_descriptor(TypeDescriptor* desc, LLVMContextRef context);
 
 // --- Implementaciones de los métodos visit_ para Expresiones ---
 
@@ -291,11 +290,23 @@ LLVMValueRef visit_FunctionDefinition_impl(LLVMCodeGenerator* self, FunctionDefi
     IrSymbolTable* fn_scope = create_ir_symbol_table(0, current_scope(self->scope_stack));
     push_scope(self->scope_stack, fn_scope);
 
-    for (int i = 0; i < node->param_count; ++i) {
+  for (int i = 0; i < node->param_count; ++i) {
+        if (!param_types[i]) {
+            fprintf(stderr, "Error: param_types[%d] es NULL en la función '%s'.\n", i, node->name);
+            continue;
+        }
+        if (!node->params[i] || !node->params[i]->name) {
+            fprintf(stderr, "Error: params[%d] o su nombre es NULL en la función '%s'.\n", i, node->name);
+            continue;
+        }
         LLVMValueRef param = LLVMGetParam(fn, i);
-        LLVMValueRef alloca = LLVMBuildAlloca(self->builder, param_types[i], node->params_names[i]);
+        if (!param) {
+            fprintf(stderr, "Error: LLVMGetParam devolvió NULL para el parámetro %d de la función '%s'.\n", i, node->name);
+            continue;
+        }
+        LLVMValueRef alloca = LLVMBuildAlloca(self->builder, param_types[i], node->params[i]->name);
         LLVMBuildStore(self->builder, param, alloca);
-        insert_ir_symbol(fn_scope, node->params_names[i], alloca);
+        insert_ir_symbol(fn_scope, node->params[i]->name, alloca);
     }
 
     LLVMBasicBlockRef body_bb = LLVMAppendBasicBlockInContext(self->context, fn, "body");
@@ -374,14 +385,4 @@ LLVMValueRef visit_FunctionCall_impl(LLVMCodeGenerator* self, FunctionCallNode* 
 
     free(args);
     return call;
-}
-
-LLVMTypeRef get_llvm_type_from_descriptor(TypeDescriptor* desc, LLVMContextRef context) {
-    switch (desc->tag) {
-        case HULK_Type_Number:   return LLVMDoubleTypeInContext(context);
-        case HULK_Type_Boolean:  return LLVMInt1TypeInContext(context);
-        case HULK_Type_String:   return LLVMPointerType(LLVMInt8TypeInContext(context), 0);
-
-        default: return NULL;
-    }
 }

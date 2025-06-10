@@ -1,6 +1,7 @@
 // En codegen/llvm_codegen.c
 #include "visitors.h"
 #include "scope_stack.h"
+#include "utils.h"
 #include "../../../frontend/ast/ast.h"
 #include <stdlib.h>
 #include <stdio.h>
@@ -80,8 +81,13 @@ LLVMModuleRef generate_code(ProgramNode* program, LLVMCodeGenerator* generator) 
     define_FunctionBodies_impl(generator, program->function_list);
 
     LLVMPositionBuilderAtEnd(generator->builder, entry_block);
-    
+    print_ast_node(program->root, 1);
     printf("Llamando a accept del nodo raíz (tipo %d)\n", program->root->type);
+    if(program->root->accept){
+        printf("El nodo raíz tiene un método accept definido.\n");
+    } else {
+        printf("El nodo raíz NO tiene un método accept definido.\n");
+    }
     LLVMValueRef program_result = program->root->accept(program->root, generator);
 
     if (program_result) {

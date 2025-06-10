@@ -21,10 +21,10 @@ TypeTable *type_table;
     int ival;
     char* sval;
     struct ASTNode* node;
-    VariableAssigment var_assig;
+    struct VariableAssigment* var_assig;
     HULK_Op token;
     struct { struct ASTNode** nodes;  int count;} node_list;
-    struct { struct VariableAssigment* list; int count; } var_assig_list;
+    struct { struct VariableAssigment** list; int count; } var_assig_list;
     struct { char* name; char* type;} param_info;
     struct { char** names ; char** types; int count;} param_list_info;
     struct { char* name; char** param_names; char** param_types ; int param_count; char* return_type;} function_header;
@@ -97,7 +97,7 @@ FunctionHeader          : FUNCTION ID LPAREN ParameterList RPAREN OptionalType
                         }
                         ;
 
-OptionalType      : /* empty */                             {$$ = "undefined";}
+OptionalType            : /* empty */                       {$$ = "Undefined";}
                         | COLON ID                          {$$ = $2;}
                         ;
 
@@ -181,7 +181,7 @@ LetInExpr               : LET VariableAssigmentList IN Expression
 
 VariableAssigmentList   : VariableAssigment
                         {
-                            VariableAssigment* list = malloc(sizeof(VariableAssigment));
+                            VariableAssigment** list = malloc(sizeof(VariableAssigment*));
                             list[0] = $1;
                             $$.list = list;
                             $$.count = 1;
@@ -189,16 +189,21 @@ VariableAssigmentList   : VariableAssigment
                         | VariableAssigmentList COMMA VariableAssigment
                         {
                             int new_count = $1.count + 1;
-                            VariableAssigment* list = realloc($1.list, new_count * sizeof(VariableAssigment));
+                            VariableAssigment** list = realloc($1.list, new_count * sizeof(VariableAssigment*));
                             list[new_count - 1] = $3;
                             $$.list = list;
                             $$.count = new_count;
                         }
-                        ;   
-
-VariableAssigment       : ID ASSIGN Expression  { $$.name = $1; $$.value = $3; }
                         ;
 
+VariableAssigment       : Parameter ASSIGN Expression    
+                        { VariableAssigment* var = malloc(sizeof(VariableAssigment)); 
+                          var->name = $1.name; 
+                          var->value = $3; 
+                          var->static_type = $1.type;
+                          $$ = var;
+                        }
+                        ;
 
 OrExpr                  : OrExpr OR AndExpr         { $$ = create_binary_operation_node(OR_TK, $1, $3, type_table); }
                         | AndExpr                   { $$ = $1; }

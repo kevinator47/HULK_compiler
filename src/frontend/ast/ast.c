@@ -120,8 +120,8 @@ ASTNode* create_while_loop_node(ASTNode *condition, ASTNode *body, TypeTable *ta
     return (ASTNode*) node;
 }
 
-ASTNode* create_let_in_node(VariableAssigment*assigments, int assigment_count, ASTNode *body, TypeTable *table) {
-    LetInNode *node = malloc(sizeof(LetInNode));
+ASTNode* create_let_in_node(VariableAssigment** assigments, int assigment_count, ASTNode* body, TypeTable* table) {
+    LetInNode* node = malloc(sizeof(LetInNode));
     if (!node) return NULL;
 
     node->base.type = AST_Node_Let_In;
@@ -129,24 +129,20 @@ ASTNode* create_let_in_node(VariableAssigment*assigments, int assigment_count, A
     node->base.accept = generic_ast_accept;
     node->scope = NULL; // scope will be created later
 
-    node->assigments = malloc(sizeof(VariableAssigment) * assigment_count);
+    node->assigments = malloc(sizeof(VariableAssigment*) * assigment_count);
     if (!node->assigments) {
         free(node);
         return NULL; // Error allocating memory
     }
 
     for (int i = 0; i < assigment_count; i++) {
-        node->assigments[i] = assigments[i]; // copy the struct
+        node->assigments[i] = assigments[i];
     }
+
     node->assigment_count = assigment_count;
     node->body = body;
 
     return (ASTNode*) node;
-}
-
-void create_scope_let_in_node(LetInNode* node, SymbolTable* parent_scope) {
-    // Crea un nuevo scope para el bloque LET-IN
-    node->scope = create_symbol_table(parent_scope);
 }
 
 ASTNode* create_variable_node(char *name, TypeTable *table) {

@@ -157,19 +157,20 @@ void print_let_in_node(LetInNode *node, int indent) {
     if (!node) return;
 
     print_indent(indent);
-
     printf("LET:\n");
+
     for (int i = 0; i < node->assigment_count; i++) {
-        VariableAssigment *assigment = &node->assigments[i];
-        print_indent(indent);
-        printf("%s = \n", assigment->name);
-        print_ast_node(assigment->value, indent + 1);
+        VariableAssigment *assigment = node->assigments[i];
+        print_indent(indent + 1);
+        printf("%s =\n", assigment->name);
+        print_ast_node(assigment->value, indent + 2);
     }
-    
+
     print_indent(indent);
     printf("IN:\n");
     print_ast_node(node->body, indent + 1);
 }
+
 
 void print_variable_node(VariableNode *node, int indent) {
     if (!node) return;

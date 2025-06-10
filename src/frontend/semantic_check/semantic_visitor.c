@@ -60,17 +60,19 @@ TypeDescriptor* semantic_visit(SemanticVisitor* visitor, ASTNode* node, SymbolTa
     }
     case AST_Node_Let_In: {
         LetInNode* let_in_node = (LetInNode*) node;
-
-        create_scope_let_in_node(let_in_node, current_scope);        
+        let_in_node->scope = create_symbol_table(current_scope);
+        
         // Visit the assigments first
         for (int i = 0; i < let_in_node->assigment_count; i++) {
-            VariableAssigment* assigment = &let_in_node->assigments[i];
+            VariableAssigment* assigment = let_in_node->assigments[i]; 
             semantic_visit(visitor, assigment->value, let_in_node->scope);
-            add_assigment_to_scope(let_in_node->scope, assigment); 
-        }        
-        // Visit the body
+            add_assigment_to_scope(let_in_node->scope, assigment, visitor->typeTable);
+        }
+
         semantic_visit(visitor, let_in_node->body, let_in_node->scope);
+
         return check_semantic_let_in_node(let_in_node);
+        
         break;
     }
     case AST_Node_Variable: {

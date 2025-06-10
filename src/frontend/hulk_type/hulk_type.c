@@ -29,50 +29,21 @@ TypeDescriptor* create_user_defined_type(const char *name, TypeInfo* info, TypeD
     return type;
 }
 
-TypeDescriptor** ancestors(TypeDescriptor* t, int* count) {
-    *count = 0;
-    
-    if(!t) return NULL;
-    if(!t->parent) return malloc(0);    // lista vacia
-    
-    int capacity = 8;
-    TypeDescriptor** result = malloc(sizeof(TypeDescriptor*) * capacity);
+bool inherits_from(TypeDescriptor* t1, TypeDescriptor* t2) {
+    if (!t1 || !t2 || t1 == t2) return false;
 
-    TypeDescriptor* current = t->parent;
+    TypeDescriptor* current = t1->parent;
     while (current) {
-        if (*count >= capacity) {
-            capacity *= 2;
-            result = realloc(result, sizeof(TypeDescriptor*) * capacity);
-        }
-        result[(*count)++] = current;
-
+        if (cmp_type(current, t2)) return true;
         current = current->parent;
     }
 
-    // Ajustar memoria al tamaño exacto
-    if (*count < capacity) {
-        result = realloc(result, sizeof(TypeDescriptor*) * (*count));
-    }
-
-    return result;
+    return false;
 }
 
 bool conforms(TypeDescriptor* t1, TypeDescriptor* t2) {
     if (!t1 || !t2) return false;
-    if (t1 == t2) return true;
-
-    int count = 0;
-    TypeDescriptor** list = ancestors(t1, &count);
-
-    for (int i = 0; i < count; i++) {
-        if (cmp_type(list[1] , t2)) {
-            free(list);
-            return true;
-        }
-    }
-
-    free(list);
-    return false;
+    return cmp_type(t1, t2) || inherits_from(t1, t2);
 }
 
 bool cmp_type(TypeDescriptor* t1, TypeDescriptor* t2) {

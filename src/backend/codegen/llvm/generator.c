@@ -1,5 +1,4 @@
 // En codegen/llvm_codegen.c
-#include "generator.h"
 #include "visitors.h"
 #include "scope_stack.h"
 #include "../../../frontend/ast/ast.h"
@@ -32,6 +31,14 @@ LLVMCodeGenerator* create_llvm_code_generator(const char* module_name) {
     generator->visit_Literal = visit_Literal_impl;
     generator->visit_UnaryOp = visit_UnaryOp_impl;
     generator->visit_BinaryOp = visit_BinaryOp_impl;
+    generator->visit_Let = visit_Let_impl;
+    generator->visit_Variable = visit_Variable_impl;
+    generator->visit_Conditional = visit_Conditional_impl;
+    generator->visit_ExpressionBlock = visit_ExpressionBlock_impl;
+    generator->visit_FunctionDefinition = visit_FunctionDefinition_impl;
+    generator->visit_FunctionCall = visit_FunctionCall_impl;
+    generator->declare_FunctionHeaders_impl = declare_FunctionHeaders_impl;
+    generator->define_FunctionBodies_impl = define_FunctionBodies_impl;
 
     return generator;
 }
@@ -51,9 +58,9 @@ void destroy_llvm_code_generator(LLVMCodeGenerator* generator) {
 }
 
 // --- Funcion principal para generar codigo ---
-LLVMModuleRef generate_code(ASTNode* root_node, LLVMCodeGenerator* generator) {
+LLVMModuleRef generate_code(ProgramNode* program, LLVMCodeGenerator* generator) {
     printf("Entrando a generate_code\n");
-    if (!root_node) {
+    if (!program) {
         printf("El root es NULL\n");
         return NULL;
     }
@@ -61,15 +68,21 @@ LLVMModuleRef generate_code(ASTNode* root_node, LLVMCodeGenerator* generator) {
         fprintf(stderr, "Error: generator es NULL.\n");
         return NULL;
     }
+    printf("Declarando encabezados de funciones\n");
+    declare_FunctionHeaders_impl(generator, program->function_list);
 
+    //Generar el cuerpo de la funcion main
     LLVMTypeRef double_type = LLVMDoubleTypeInContext(generator->context);
     LLVMTypeRef main_fn_type = LLVMFunctionType(double_type, NULL, 0, 0);
     LLVMValueRef main_fn = LLVMAddFunction(generator->module, "main", main_fn_type);
     LLVMBasicBlockRef entry_block = LLVMAppendBasicBlockInContext(generator->context, main_fn, "entry");
-    LLVMPositionBuilderAtEnd(generator->builder, entry_block);
 
-    printf("Llamando a accept del nodo raíz (tipo %d)\n", root_node->type);
-    LLVMValueRef program_result = root_node->accept(root_node, generator);
+    define_FunctionBodies_impl(generator, program->function_list);
+
+    LLVMPositionBuilderAtEnd(generator->builder, entry_block);
+    
+    printf("Llamando a accept del nodo raíz (tipo %d)\n", program->root->type);
+    LLVMValueRef program_result = program->root->accept(program->root, generator);
 
     if (program_result) {
         LLVMBuildRet(generator->builder, program_result);

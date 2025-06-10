@@ -1,1 +1,6 @@
-(4 * 5) - 8 ;
+function suma(x,y){
+    x + y;
+}
+function resta(x,y){
+    x - y;
+}

@@ -77,7 +77,7 @@ int main(int argc, char **argv) {
     // 6. Generación de código LLVM
     const char* module_name = "hulk_module";
     LLVMCodeGenerator* generator = create_llvm_code_generator("hulk_module");
-    LLVMModuleRef module = generate_code(root_node, generator);
+    LLVMModuleRef module = generate_code((ProgramNode*)root_node, generator);
 
     // 7. Imprimir a archivo
     if (module) {

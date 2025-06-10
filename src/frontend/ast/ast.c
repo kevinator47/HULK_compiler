@@ -157,6 +157,7 @@ ASTNode* create_variable_node(char *name, TypeTable *table) {
     node->base.return_type = type_table_lookup(table, "undefined");
     node->name = strdup(name);
     node->scope = NULL;
+    node->base.accept = generic_ast_accept;
 
     return (ASTNode*) node;
 }

@@ -25,12 +25,16 @@ struct LLVMCodeGenerator {
     LLVMValueRef (*visit_ExpressionBlock)(LLVMCodeGenerator* self, ExpressionBlockNode* node);
     LLVMValueRef (*visit_Let)(LLVMCodeGenerator* self, LetInNode* node);
     LLVMValueRef (*visit_Variable)(LLVMCodeGenerator* self, VariableNode* node);
+    LLVMValueRef (*visit_ReassignNode)(LLVMCodeGenerator* self, ReassignNode* node);
     LLVMValueRef (*visit_Conditional)(LLVMCodeGenerator* self, ConditionalNode* node);
+    LLVMValueRef (*visit_FunctionDefinition)(LLVMCodeGenerator* self, FunctionDefinitionNode* node);
     LLVMValueRef (*visit_FunctionCall)(LLVMCodeGenerator* self, FunctionCallNode* node);
+    LLVMValueRef (*declare_FunctionHeaders_impl)(LLVMCodeGenerator* self, FunctionDefinitionNode* node);
+    LLVMValueRef (*define_FunctionBodies_impl)(LLVMCodeGenerator* self, FunctionDefinitionNode* node);
 };
 
 LLVMCodeGenerator* create_llvm_code_generator(const char* module_name);
 void destroy_llvm_code_generator(LLVMCodeGenerator* generator);
-LLVMModuleRef generate_code(ASTNode* root_node, LLVMCodeGenerator* generator);
+LLVMModuleRef generate_code(ProgramNode* program, LLVMCodeGenerator* generator);
 
 #endif // LLVM_CODEGEN_H

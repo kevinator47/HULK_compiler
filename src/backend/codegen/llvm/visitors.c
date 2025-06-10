@@ -1,6 +1,7 @@
 #include "visitors.h"
 #include "utils.h"
 #include <stdio.h>
+#include "builtins.h"
 
 // --- Implementaciones de los métodos visit_ para Expresiones ---
 
@@ -234,7 +235,7 @@ LLVMValueRef visit_Variable_impl(LLVMCodeGenerator* self, VariableNode* node) {
         return NULL;
     }
 
-    return LLVMBuildLoad(self->builder, symbol->value, node->name);
+    return LLVMBuildLoad2(self->builder, LLVMTypeOf(symbol->value), symbol->value, node->name);
 }
 
 LLVMValueRef visit_ReassignNode_impl(LLVMCodeGenerator* self, ReassignNode* node){
@@ -364,12 +365,15 @@ void declare_FunctionDefinitionList_impl(LLVMCodeGenerator* self, FunctionDefini
 }
 
 LLVMValueRef visit_FunctionCall_impl(LLVMCodeGenerator* self, FunctionCallNode* node) {
+    LLVMValueRef builtin_result = generate_builtin_function(self, node);
+    if (builtin_result) return builtin_result;
+
+    // Llamada a función de usuario
     LLVMValueRef fn = LLVMGetNamedFunction(self->module, node->name);
     if (!fn) {
         fprintf(stderr, "Error: función '%s' no encontrada en el módulo LLVM.\n", node->name);
         return NULL;
     }
-
     LLVMValueRef* args = malloc(node->arg_count * sizeof(LLVMValueRef));
     for (int i = 0; i < node->arg_count; ++i) {
         args[i] = node->args[i]->accept(node->args[i], self);
@@ -379,10 +383,8 @@ LLVMValueRef visit_FunctionCall_impl(LLVMCodeGenerator* self, FunctionCallNode* 
             return NULL;
         }
     }
-
     LLVMTypeRef fn_type = LLVMGetElementType(LLVMTypeOf(fn));
     LLVMValueRef call = LLVMBuildCall2(self->builder, fn_type, fn, args, node->arg_count, "calltmp");
-
     free(args);
     return call;
 }

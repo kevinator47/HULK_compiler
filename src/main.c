@@ -18,20 +18,20 @@ int main(int argc, char **argv) {
     type_table = create_type_table();
 
     // 2. Creacion tipos builtin
-    TypeDescriptor *number_type = create_builtin_type(HULK_Type_Number, "number");
-    TypeDescriptor *bool_type = create_builtin_type(HULK_Type_Boolean, "bool");
-    TypeDescriptor *string_type = create_builtin_type(HULK_Type_String, "string");
-    TypeDescriptor *null_type = create_builtin_type(HULK_Type_Null, "null");
-    TypeDescriptor *undefined_type = create_builtin_type(HULK_Type_Undefined, "undefined");
-    TypeDescriptor *any_type = create_builtin_type(HULK_Type_Any, "any");
-
+    TypeDescriptor* object_type = create_builtin_type(HULK_Type_Object, "Object", NULL);
+    TypeDescriptor* number_type = create_builtin_type(HULK_Type_Number, "Number", object_type);
+    TypeDescriptor* bool_type = create_builtin_type(HULK_Type_Boolean, "Bool", object_type);
+    TypeDescriptor* string_type = create_builtin_type(HULK_Type_String, "String", object_type);
+    TypeDescriptor* null_type = create_builtin_type(HULK_Type_Null, "Null", object_type);
+    TypeDescriptor* undefined_type = create_builtin_type(HULK_Type_Undefined, "Undefined", object_type);
+    
     // Agregarlos a la tabla 
+    add_type(type_table, object_type);
     add_type(type_table, number_type);
     add_type(type_table, bool_type);
     add_type(type_table, string_type);
     add_type(type_table, null_type);
     add_type(type_table, undefined_type);
-    add_type(type_table, any_type);
 
     // Mensaje de verificación(debug)
     printf("Se han cargado %d tipos builtin en la tabla de tipos.\n", type_table->count);

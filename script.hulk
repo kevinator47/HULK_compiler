@@ -1,6 +1,12 @@
-function suma(x,y){
+function suma(x : Number,y : Number) : Number{
     x + y;
 }
-function resta(x,y){
+function resta(x : Number,y : Number) : Number{
     x - y;
 }
+function gcd(a : Number,b : Number): Number {if(a%b == 0) {
+                                            b;
+                                            }
+                                        else gcd(b,a%b);
+}
+gcd(16,10);

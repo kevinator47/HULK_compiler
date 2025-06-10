@@ -33,36 +33,38 @@ LLVMValueRef generic_ast_accept(struct ASTNode* self, struct LLVMCodeGenerator* 
             break;
 
         case AST_Node_Let_In:
-            // Por ahora, solo manejaremos expresiones. Los nodos no implementados devuelven NULL.
-            // En la implementacion completa, harias el cast y llamarias a visitor->visit_Let
              if (visitor->visit_Let) {
-                 // return visitor->visit_Let(visitor, (LetNode*)self); // Implementacion completa
-                 fprintf(stderr, "Nodo Let_Node no implementado en generacion de codigo.\n"); // Mensaje temporal
-                 return NULL; // Devolver NULL por ahora
+                return visitor->visit_Let(visitor, (LetInNode*)self); // Implementacion completa
              }
             break;
 
         case AST_Node_Variable:
              if (visitor->visit_Variable) {
-                 // return visitor->visit_Variable(visitor, (VariableNode*)self); // Implementacion completa
-                  fprintf(stderr, "Nodo Variable_Node no implementado en generacion de codigo.\n"); // Mensaje temporal
-                 return NULL; // Devolver NULL por ahora
+                return visitor->visit_Variable(visitor, (VariableNode*)self); // Implementacion completa
+             }
+            break;
+
+        case AST_Node_Reassign:
+             if (visitor->visit_ReassignNode){
+                return visitor->visit_ReassignNode(visitor, (ReassignNode*)self); //Implementación completa
+            }
+            break;
+
+        case AST_Node_Function_Definition:
+             if (visitor->visit_FunctionDefinition) {
+                return visitor->visit_FunctionDefinition(visitor, (FunctionDefinitionNode*)self); // Implementacion completa
              }
             break;
 
          case AST_Node_Conditional:
              if (visitor->visit_Conditional) {
-                 // return visitor->visit_Conditional(visitor, (ConditionalNode*)self); // Implementacion completa
-                  fprintf(stderr, "Nodo Conditional_Node no implementado en generacion de codigo.\n"); // Mensaje temporal
-                 return NULL; // Devolver NULL por ahora
+                 return visitor->visit_Conditional(visitor, (ConditionalNode*)self); // Implementacion completa
              }
             break;
 
          case AST_Node_Function_Call:
              if (visitor->visit_FunctionCall) {
-                 // return visitor->visit_FunctionCall(visitor, (FunctionCallNode*)self); // Implementacion completa
-                  fprintf(stderr, "Nodo Function_Call_Node no implementado en generacion de codigo.\n"); // Mensaje temporal
-                 return NULL; // Devolver NULL por ahora
+                return visitor->visit_FunctionCall(visitor, (FunctionCallNode*)self); // Implementacion completa
              }
             break;
 

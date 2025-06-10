@@ -30,9 +30,9 @@ typedef struct TypeInfo {
 // Prototipos de funciones
 TypeDescriptor* create_builtin_type(HULK_Type tag, const char *type_name, TypeDescriptor* parent);
 TypeDescriptor* create_user_defined_type(const char *name, TypeInfo* info, TypeDescriptor* parent, bool init);
-int is_builtin_type(const TypeDescriptor* type);
+TypeDescriptor** ancestors(TypeDescriptor* t, int* count);
+bool conforms(TypeDescriptor* t1 , TypeDescriptor* t2);
+bool cmp_type(TypeDescriptor* t1, TypeDescriptor* t2);
 void free_type_descriptor(TypeDescriptor* type);
 void free_type_info(TypeInfo* info);
-void free_attribute(Attribute* attr);
-bool is_compatible(TypeDescriptor *t1, TypeDescriptor *t2);
 #endif // HULK_TYPE_H

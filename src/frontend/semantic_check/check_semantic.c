@@ -38,8 +38,8 @@ TypeDescriptor* check_semantic_binary_operation_node(BinaryOperationNode* node, 
     ASTNode* right = node->right;
 
     // Para inferencia de tipos
-    TypeDescriptor* number_type = type_table_lookup(table, "number");
-    TypeDescriptor* bool_type = type_table_lookup(table, "bool");
+    TypeDescriptor* number_type = type_table_lookup(table, "Number");
+    TypeDescriptor* bool_type = type_table_lookup(table, "Bool");
 
     // Validar el operador binario
     switch (node->operator) {
@@ -97,7 +97,7 @@ TypeDescriptor* check_semantic_binary_operation_node(BinaryOperationNode* node, 
 TypeDescriptor* check_semantic_expression_block_node(ExpressionBlockNode* node, TypeTable* table) {
     // Asignar como tipo de retorno el tipo del último nodo del bloque
     if (node->expression_count == 0) {
-        node->base.return_type = type_table_lookup(table, "null");
+        node->base.return_type = type_table_lookup(table, "Null");
     }
     else {
         node->base.return_type = node->expressions[node->expression_count - 1]->return_type;

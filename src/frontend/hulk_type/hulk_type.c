@@ -1,29 +1,33 @@
 #include "hulk_type.h"
 
-TypeDescriptor *create_builtin_type(HULK_Type tag, const char *type_name) {
-    // Crea un tipo de dato primitivo en el lenguaje Hulk.
+TypeDescriptor* create_builtin_type(HULK_Type tag, const char *type_name, TypeDescriptor* parent) {
+    // Crea un tipo de dato primitivo del lenguaje HULK.
+    
     TypeDescriptor *type = malloc(sizeof(TypeDescriptor));
     if (!type) {
-        return NULL; // Error al asignar memoria
+        return NULL; 
     }
     type->type_name = strdup(type_name);
     type->tag = tag;
-    type->info = NULL; // Tipos primitivos no tienen información adicional
+    type->info = NULL;      
+    type->parent = parent;
+    type->initializated = true;
     return type;
 }
 
-TypeDescriptor *create_user_defined_type(TypeInfo *info, const char *type_name) {
+TypeDescriptor* create_user_defined_type(const char *name, TypeInfo* info, TypeDescriptor* parent, bool init) {
     // Crea un tipo de dato definido por el usuario en el lenguaje Hulk.
     TypeDescriptor *type = malloc(sizeof(TypeDescriptor));
     if (!type) {
         return NULL; // Error al asignar memoria
     }
-    type->type_name = strdup(type_name);
+    type->type_name = strdup(name);
     type->tag = HULK_Type_UserDefined;
-    type->info = info; // Asigna la información del tipo definido por el usuario
+    type->info = info;
+    type->parent = parent;
+    type->initializated = init;      
     return type;
 }
-
 
 int is_builtin_type(const TypeDescriptor *type) {
     // Verifica si un tipo es un tipo primitivo en el lenguaje Hulk.
@@ -36,7 +40,6 @@ bool is_compatible(TypeDescriptor* t1 , TypeDescriptor *t2) {
     //  TODO : add check if t2 if ancestor of t1
     return (t1->tag == t2->tag || t2->tag == HULK_Type_Object);
 }
-
 
 void free_type_descriptor(TypeDescriptor *type) {
     // Libera la memoria de un TypeDescriptor.
@@ -55,23 +58,8 @@ void free_type_info(TypeInfo *info) {
             free(info->params_name[i]);
         }
         free(info->params_name);
-        for (int i = 0; i < info->attribute_count; i++) {
-            free_attribute(info->attributes[i]);
-        }
-        free(info->attributes);
                 
         // TODO: implementar liberación de la tabla de métodos
         free(info);
-    }
-}
-
-void free_attribute(Attribute *attr) {
-    // Libera la memoria de un atributo.
-    if (attr) {
-        free(attr->attr_name);
-        if (attr->initializer) {
-            free_ast_node(attr->initializer); // Asumiendo que el ASTNode también tiene una función de liberación
-        }
-        free(attr);
     }
 }

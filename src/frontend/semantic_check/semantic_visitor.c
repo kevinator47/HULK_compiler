@@ -11,7 +11,7 @@ SemanticVisitor* init_semantic_visitor(TypeTable* type_table) {
 
 TypeDescriptor* semantic_visit(SemanticVisitor* visitor, ASTNode* node, SymbolTable* current_scope) {
     if(!node) {
-        return type_table_lookup(visitor->typeTable,"null");
+        return type_table_lookup(visitor->typeTable,"Null");
     }
     
     switch (node->type)
@@ -102,7 +102,7 @@ TypeDescriptor* semantic_visit(SemanticVisitor* visitor, ASTNode* node, SymbolTa
             FunctionDefinitionNode* function_node = function_list_node->functions[i];
             semantic_visit(visitor, (ASTNode*) function_node, current_scope);
         }
-        return type_table_lookup(visitor->typeTable,"null");
+        return type_table_lookup(visitor->typeTable,"Null");
         break;
     }
     case AST_Node_Function_Definition: {
@@ -116,7 +116,7 @@ TypeDescriptor* semantic_visit(SemanticVisitor* visitor, ASTNode* node, SymbolTa
 
         // TODO: Set the return type of the function in the global scope(when inference)
         
-        return type_table_lookup(visitor->typeTable,"null"); 
+        return type_table_lookup(visitor->typeTable,"Null"); 
         break;
     }
     case AST_Node_Function_Call : {

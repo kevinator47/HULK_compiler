@@ -13,13 +13,6 @@ void yyerror(const char *s);
 ASTNode *root_node;
 TypeTable *type_table;
 
-char* strtolower(char* str) {
-    char* result = strdup(str);
-    for (int i = 0; result[i]; i++) {
-        result[i] = tolower(result[i]);
-    }
-    return result;
-}
 
 %}
 
@@ -105,7 +98,7 @@ FunctionHeader          : FUNCTION ID LPAREN ParameterList RPAREN OptionalType
                         ;
 
 OptionalType      : /* empty */                             {$$ = "undefined";}
-                        | COLON ID                          {$$ = strtolower($2);}
+                        | COLON ID                          {$$ = $2;}
                         ;
 
 ParameterList           : /* empty */ 

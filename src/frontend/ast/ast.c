@@ -17,7 +17,7 @@ ASTNode* create_number_literal_node(double value, TypeTable *table) {
     if (!node) return NULL;
 
     node->base.type = AST_Node_Literal;
-    node->base.return_type = type_table_lookup(table, "number");
+    node->base.return_type = type_table_lookup(table, "Number");
     node->base.accept = generic_ast_accept;
     node->value.number_value = value;
 
@@ -29,7 +29,7 @@ ASTNode* create_string_literal_node(char *value, TypeTable *table) {
     if (!node) return NULL;
 
     node->base.type = AST_Node_Literal;
-    node->base.return_type = type_table_lookup(table, "string");
+    node->base.return_type = type_table_lookup(table, "String");
     node->base.accept = generic_ast_accept;
     node->value.string_value = strdup(value); 
 
@@ -41,7 +41,7 @@ ASTNode* create_bool_literal_node(int value, TypeTable *table) {
     if (!node) return NULL;
 
     node->base.type = AST_Node_Literal;
-    node->base.return_type = type_table_lookup(table, "bool");
+    node->base.return_type = type_table_lookup(table, "Bool");
     node->base.accept = generic_ast_accept;
     node->value.bool_value = value != 0; // asegurar 0 o 1
 
@@ -52,7 +52,7 @@ ASTNode* create_unary_operation_node(HULK_Op operator, ASTNode *operand, TypeTab
     if (!node) return NULL;
 
     node->base.type = AST_Node_Unary_Operation;
-    node->base.return_type = type_table_lookup(table, "undefined");
+    node->base.return_type = type_table_lookup(table, "Undefined");
     node->base.accept = generic_ast_accept;
     node->operator = operator;
     node->operand = operand;
@@ -65,7 +65,7 @@ ASTNode* create_binary_operation_node(HULK_Op operator, ASTNode *left, ASTNode *
     if (!node) return NULL;
 
     node->base.type = AST_Node_Binary_Operation;
-    node->base.return_type = type_table_lookup(table, "undefined"); 
+    node->base.return_type = type_table_lookup(table, "Undefined"); 
     node->base.accept = generic_ast_accept;
     node->operator = operator;
     node->left = left;
@@ -79,7 +79,7 @@ ASTNode* create_expression_block_node(ASTNode **expressions, int count, TypeTabl
     if (!node) return NULL;
 
     node->base.type = AST_Node_Expression_Block;
-    node->base.return_type = type_table_lookup(table, "undefined");
+    node->base.return_type = type_table_lookup(table, "Undefined");
     node->base.accept = generic_ast_accept;
     
     // do not assign the array, copy each expression
@@ -98,7 +98,7 @@ ASTNode* create_conditional_node(ASTNode *condition, ASTNode *then_branch, ASTNo
     if (!node) return NULL;
 
     node->base.type = AST_Node_Conditional;
-    node->base.return_type = type_table_lookup(table, "undefined");
+    node->base.return_type = type_table_lookup(table, "Undefined");
     node->base.accept = generic_ast_accept;
     node->condition = condition;
     node->then_branch = then_branch;
@@ -112,7 +112,7 @@ ASTNode* create_while_loop_node(ASTNode *condition, ASTNode *body, TypeTable *ta
     if (!node) return NULL;
 
     node->base.type = AST_Node_While_Loop;
-    node->base.return_type = type_table_lookup(table, "undefined");
+    node->base.return_type = type_table_lookup(table, "Undefined");
     node->base.accept = generic_ast_accept;
     node->condition = condition;
     node->body = body;
@@ -125,7 +125,7 @@ ASTNode* create_let_in_node(VariableAssigment*assigments, int assigment_count, A
     if (!node) return NULL;
 
     node->base.type = AST_Node_Let_In;
-    node->base.return_type = type_table_lookup(table, "undefined");
+    node->base.return_type = type_table_lookup(table, "Undefined");
     node->base.accept = generic_ast_accept;
     node->scope = NULL; // scope will be created later
 
@@ -154,7 +154,7 @@ ASTNode* create_variable_node(char *name, TypeTable *table) {
     if (!node) return NULL;
 
     node->base.type = AST_Node_Variable;
-    node->base.return_type = type_table_lookup(table, "undefined");
+    node->base.return_type = type_table_lookup(table, "Undefined");
     node->name = strdup(name);
     node->scope = NULL;
     node->base.accept = generic_ast_accept;
@@ -167,7 +167,7 @@ ASTNode* create_reassign_node(char *name, ASTNode *value, TypeTable *table) {
     if (!node) return NULL;
 
     node->base.type = AST_Node_Reassign;
-    node->base.return_type = type_table_lookup(table, "undefined");
+    node->base.return_type = type_table_lookup(table, "Undefined");
     node->base.accept = generic_ast_accept;
     node->name = strdup(name);
     node->value = value;
@@ -181,7 +181,7 @@ ASTNode* create_function_definition_node(const char* name, char** param_names, c
     if (!node) return NULL;
 
     node->base.type = AST_Node_Function_Definition;
-    node->base.return_type = type_table_lookup(table, "null");
+    node->base.return_type = type_table_lookup(table, "Null");
     node->base.accept = generic_ast_accept;
 
     node->name = strdup(name);
@@ -206,7 +206,7 @@ ASTNode* create_function_definition_node(const char* name, char** param_names, c
 ASTNode* create_function_definition_list_node(TypeTable* table) {
     FunctionDefinitionListNode* node = malloc(sizeof(FunctionDefinitionListNode));
     node->base.type = AST_Node_Function_Definition_List;
-    node->base.return_type = type_table_lookup(table, "null");
+    node->base.return_type = type_table_lookup(table, "Null");
     node->base.accept = generic_ast_accept;
     node->functions = NULL;
     node->function_count = 0;
@@ -243,7 +243,7 @@ ASTNode* create_function_call_node(char* name, ASTNode** args, int arg_count, Ty
     if (!node) return NULL;
 
     node->base.type = AST_Node_Function_Call;
-    node->base.return_type = type_table_lookup(table, "undefined");
+    node->base.return_type = type_table_lookup(table, "Undefined");
     node->base.accept = generic_ast_accept;
     node->name = strdup(name);
     node->arg_count = arg_count;
@@ -263,7 +263,7 @@ ASTNode* create_program_node(FunctionDefinitionListNode *function_list, ASTNode 
     if (!node) return NULL;
 
     node->base.type = AST_Node_Program;
-    node->base.return_type = type_table_lookup(table, "null");
+    node->base.return_type = type_table_lookup(table, "Null");
     node->base.accept = generic_ast_accept;
     node->function_list = function_list;
     node->root = root;

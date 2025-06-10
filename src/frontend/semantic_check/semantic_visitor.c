@@ -137,7 +137,7 @@ TypeDescriptor* semantic_visit(SemanticVisitor* visitor, ASTNode* node, SymbolTa
     case AST_Node_Program: {
         ProgramNode* program_node = (ProgramNode*) node;
         semantic_visit(visitor, (ASTNode*)program_node->function_list, current_scope);
-        semantic_visit(visitor, program_node->root, current_scope);
+        program_node->base.return_type = semantic_visit(visitor, program_node->root, current_scope);
         return program_node->base.return_type;
         break; 
     }

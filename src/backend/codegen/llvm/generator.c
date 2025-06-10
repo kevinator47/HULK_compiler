@@ -69,6 +69,8 @@ LLVMModuleRef generate_code(ProgramNode* program, LLVMCodeGenerator* generator) 
         fprintf(stderr, "Error: generator es NULL.\n");
         return NULL;
     }
+    printf("Declarando funciones externas\n");
+    declare_external_functions(generator->module, generator->context);
     printf("Declarando encabezados de funciones\n");
     declare_FunctionHeaders_impl(generator, program->function_list);
 
@@ -107,4 +109,89 @@ LLVMModuleRef generate_code(ProgramNode* program, LLVMCodeGenerator* generator) 
     LLVMDisposeMessage(error);
 
     return generator->module;
+}
+
+void declare_external_functions(LLVMModuleRef module, LLVMContextRef context) {
+    // strcpy
+    LLVMTypeRef strcpy_type = LLVMFunctionType(LLVMVoidTypeInContext(context),
+        (LLVMTypeRef[]){
+            LLVMPointerType(LLVMInt8TypeInContext(context), 0),
+            LLVMPointerType(LLVMInt8TypeInContext(context), 0)
+        }, 2, 0);
+    LLVMAddFunction(module, "strcpy", strcpy_type);
+
+    // strcat
+    LLVMTypeRef strcat_type = LLVMFunctionType(LLVMVoidTypeInContext(context),
+        (LLVMTypeRef[]){
+            LLVMPointerType(LLVMInt8TypeInContext(context), 0),
+            LLVMPointerType(LLVMInt8TypeInContext(context), 0)
+        }, 2, 0);
+    LLVMAddFunction(module, "strcat", strcat_type);
+
+    // Funciones matemáticas (double -> double)
+    LLVMTypeRef double_func_type = LLVMFunctionType(LLVMDoubleTypeInContext(context),
+        (LLVMTypeRef[]){LLVMDoubleTypeInContext(context)}, 1, 0);
+    LLVMAddFunction(module, "sqrt", double_func_type);
+    LLVMAddFunction(module, "sin", double_func_type);
+    LLVMAddFunction(module, "cos", double_func_type);
+    LLVMAddFunction(module, "exp", double_func_type);
+    LLVMAddFunction(module, "log", double_func_type);
+
+    // pow y fmod (double, double) -> double
+    LLVMTypeRef pow_type = LLVMFunctionType(LLVMDoubleTypeInContext(context),
+        (LLVMTypeRef[]){LLVMDoubleTypeInContext(context), LLVMDoubleTypeInContext(context)}, 2, 0);
+    LLVMAddFunction(module, "pow", pow_type);
+    LLVMAddFunction(module, "fmod", pow_type);
+
+    // rand
+    LLVMTypeRef rand_type = LLVMFunctionType(LLVMInt32TypeInContext(context), NULL, 0, 0);
+    LLVMAddFunction(module, "rand", rand_type);
+
+    // strlen
+    LLVMTypeRef strlen_type = LLVMFunctionType(LLVMInt64TypeInContext(context),
+        (LLVMTypeRef[]){LLVMPointerType(LLVMInt8TypeInContext(context), 0)}, 1, 0);
+    LLVMAddFunction(module, "strlen", strlen_type);
+
+    // malloc
+    LLVMTypeRef malloc_type = LLVMFunctionType(
+        LLVMPointerType(LLVMInt8TypeInContext(context), 0),
+        (LLVMTypeRef[]){LLVMInt64TypeInContext(context)}, 1, 0);
+    LLVMAddFunction(module, "malloc", malloc_type);
+
+    // snprintf
+    LLVMTypeRef snprintf_type = LLVMFunctionType(LLVMInt32TypeInContext(context),
+        (LLVMTypeRef[]){
+            LLVMPointerType(LLVMInt8TypeInContext(context), 0),
+            LLVMInt64TypeInContext(context),
+            LLVMPointerType(LLVMInt8TypeInContext(context), 0)
+        }, 3, 1);
+    LLVMAddFunction(module, "snprintf", snprintf_type);
+
+    // strcmp
+    LLVMTypeRef strcmp_type = LLVMFunctionType(LLVMInt32TypeInContext(context),
+        (LLVMTypeRef[]){
+            LLVMPointerType(LLVMInt8TypeInContext(context), 0),
+            LLVMPointerType(LLVMInt8TypeInContext(context), 0)
+        }, 2, 0);
+    LLVMAddFunction(module, "strcmp", strcmp_type);
+
+    // printf
+    LLVMTypeRef printf_type = LLVMFunctionType(LLVMInt32TypeInContext(context),
+        (LLVMTypeRef[]){LLVMPointerType(LLVMInt8TypeInContext(context), 0)}, 1, 1);
+    LLVMValueRef printf_func = LLVMAddFunction(module, "printf", printf_type);
+    LLVMSetLinkage(printf_func, LLVMExternalLinkage);
+
+    // exit
+    if (!LLVMGetNamedFunction(module, "exit")) {
+        LLVMTypeRef exit_type = LLVMFunctionType(LLVMVoidTypeInContext(context), 
+            (LLVMTypeRef[]){LLVMInt32TypeInContext(context)}, 1, 0);
+        LLVMAddFunction(module, "exit", exit_type);
+    }
+
+    // puts
+    if (!LLVMGetNamedFunction(module, "puts")) {
+        LLVMTypeRef puts_type = LLVMFunctionType(LLVMInt32TypeInContext(context), 
+            (LLVMTypeRef[]){LLVMPointerType(LLVMInt8TypeInContext(context), 0)}, 1, 0);
+        LLVMAddFunction(module, "puts", puts_type);
+    }
 }

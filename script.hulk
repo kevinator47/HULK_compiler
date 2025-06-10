@@ -9,4 +9,7 @@ function gcd(a : Number,b : Number): Number {if(a%b == 0) {
                                             }
                                         else gcd(b,a%b);
 }
-gcd(16,10);
+{
+    gcd(16,10);
+    suma(10,2);
+}

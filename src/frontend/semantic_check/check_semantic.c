@@ -236,11 +236,31 @@ TypeDescriptor* check_semantic_function_call_node(FunctionCallNode* node, Symbol
 
 }
 
-void add_assigment_to_scope(SymbolTable* scope, VariableAssigment* assigment) {
-    // Crear un nuevo símbolo para la asignación
-    TypeDescriptor* type = assigment->value->return_type;
-    Symbol* symbol = create_symbol(assigment->name, SYMBOL_VARIABLE, type, assigment->value);
+void add_assigment_to_scope(SymbolTable* scope, VariableAssigment* assigment, TypeTable* table) {
     
+    Symbol* symbol ;    // symbol that will be inserted into the scope
+
+    TypeDescriptor* dinamyc_type = assigment->value->return_type;
+    printf("%s\n", assigment->static_type);
+    TypeDescriptor* static_type = type_table_lookup(table, assigment->static_type);
+
+    
+    if(static_type->tag == HULK_Type_Undefined)
+    {
+        symbol = create_symbol(assigment->name, SYMBOL_VARIABLE, dinamyc_type, assigment->value);
+    }
+    
+    else if (is_compatible(dinamyc_type, static_type))
+    {
+        symbol = create_symbol(assigment->name, SYMBOL_VARIABLE, static_type, assigment->value);
+    }
+
+    else
+    {
+        fprintf(stderr , "Error: Variable \"%s\" with static type \"%s\" cannot hold \"%s\" type \n", assigment->name, assigment->static_type, dinamyc_type->type_name );
+        exit(1);
+    }
+
     // Insertar el símbolo en el scope
     insert_symbol(scope, symbol);
 }

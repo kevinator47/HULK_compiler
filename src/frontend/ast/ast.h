@@ -82,13 +82,14 @@ typedef struct WhileLoopNode {
 
 typedef struct VariableAssigment {
     char* name;
+    char* static_type;
     ASTNode* value;
 } VariableAssigment;
 
 typedef struct LetInNode {
     ASTNode base;
     SymbolTable* scope;
-    VariableAssigment* assigments;
+    VariableAssigment** assigments;
     int assigment_count;
     ASTNode* body;
 } LetInNode;
@@ -152,7 +153,7 @@ ASTNode* create_binary_operation_node(HULK_Op operator, ASTNode *left, ASTNode *
 ASTNode* create_expression_block_node(ASTNode **expressions, int expression_count, TypeTable *table);
 ASTNode* create_conditional_node(ASTNode *condition, ASTNode *then_branch, ASTNode *else_branch, TypeTable *table);
 ASTNode* create_while_loop_node(ASTNode *condition, ASTNode *body, TypeTable *table);
-ASTNode* create_let_in_node(VariableAssigment *assigments, int assigment_count, ASTNode *body, TypeTable *table); 
+ASTNode* create_let_in_node(VariableAssigment** assigments, int assigment_count, ASTNode *body, TypeTable *table); 
 ASTNode* create_variable_node(char *name, TypeTable *table);
 ASTNode* create_reassign_node(char *name, ASTNode *value, TypeTable *table);
 ASTNode* create_function_definition_node(const char* name, char** param_names, char** param_types, int param_count, char* return_type, ASTNode* body, TypeTable* table);
@@ -160,7 +161,6 @@ ASTNode* create_function_definition_list_node(TypeTable *table);
 ASTNode* create_function_call_node(char* name, ASTNode** args, int arg_count, TypeTable *table);
 ASTNode* create_program_node(FunctionDefinitionListNode *function_list, ASTNode *root, TypeTable *table);
 
-void create_scope_let_in_node(LetInNode* node, SymbolTable* parent_scope);
 void register_func_params(FunctionDefinitionNode* node, SymbolTable* parent_scope, TypeTable* table);
 ASTNode* append_function_definition_to_list(FunctionDefinitionListNode* list, FunctionDefinitionNode* def);
 

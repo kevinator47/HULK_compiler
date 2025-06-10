@@ -128,12 +128,22 @@ void free_let_in_node(LetInNode *node) {
     if (!node) return;
 
     for (int i = 0; i < node->assigment_count; i++) {
-        free(node->assigments[i].name);
-        free_ast_node(node->assigments[i].value);
+        VariableAssigment* assig = node->assigments[i];
+        if (assig) {
+            free(assig->name);
+            if (assig->value) {
+                free_ast_node(assig->value);
+            }
+            free(assig);
+        }
     }
+
     free(node->assigments);
-    free_symbol_table(node->scope);
-    free_ast_node(node->body);
+
+    if (node->body) {
+        free_ast_node(node->body);
+    }
+
     free(node);
 }
 

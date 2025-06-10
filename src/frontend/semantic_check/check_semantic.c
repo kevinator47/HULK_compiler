@@ -118,7 +118,7 @@ TypeDescriptor* check_semantic_conditional_node(ConditionalNode* node) {
     ASTNode* else_branch = node->else_branch;
 
     // Asignar el tipo de retorno del nodo condicional
-    if (!else_branch || is_compatible(then_branch->return_type , else_branch->return_type)) {
+    if (!else_branch || conforms(then_branch->return_type , else_branch->return_type)) {
         node->base.return_type = then_branch->return_type; 
     } else {
         printf("Then: %d, Else: %d\n", then_branch->return_type->tag, else_branch->return_type->tag);
@@ -195,7 +195,7 @@ TypeDescriptor* check_semantic_function_definition_node(FunctionDefinitionNode* 
         exit(1);
     }
     
-    if (!is_compatible(body_return_type, static_return_type))
+    if (!conforms(body_return_type, static_return_type))
     {
         fprintf(stderr, "Error: Function %s static return type is %s, but it returns %s\n", node->name, node->static_return_type, body_return_type->type_name);
         exit(1);
@@ -223,7 +223,7 @@ TypeDescriptor* check_semantic_function_call_node(FunctionCallNode* node, Symbol
         TypeDescriptor* arg_type = node->args[i]->return_type ;
         TypeDescriptor* expected_type = lookup_symbol(func_def->scope, func_def->params[i]->name, false)->type;
     
-        if(!is_compatible(arg_type, expected_type))
+        if(!conforms(arg_type, expected_type))
         {           
             fprintf(stderr, "Type error in argument %d of function '%s'\n", i, node->name);
             exit(1);
@@ -250,7 +250,7 @@ void add_assigment_to_scope(SymbolTable* scope, VariableAssigment* assigment, Ty
         symbol = create_symbol(assigment->name, SYMBOL_VARIABLE, dinamyc_type, assigment->value);
     }
     
-    else if (is_compatible(dinamyc_type, static_type))
+    else if (conforms(dinamyc_type, static_type))
     {
         symbol = create_symbol(assigment->name, SYMBOL_VARIABLE, static_type, assigment->value);
     }

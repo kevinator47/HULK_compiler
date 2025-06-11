@@ -27,7 +27,9 @@ id          {letter}({letter}|{digit}|_)*
 "else"              { return ELSE; }
 "while"             { return WHILE; }
 "let"               { return LET; }
+"inherits"          { return INHERITS; }
 "in"                { return IN; }
+"type"              { return TYPE; }
 "function"          { return FUNCTION; }
 {number}            { yylval.dval = atof(yytext); return NUMBER; }
 {id}                { yylval.sval = strdup(yytext); return ID; }

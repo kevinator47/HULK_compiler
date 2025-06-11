@@ -20,14 +20,16 @@ TypeTable *type_table;
     double dval;
     int ival;
     char* sval;
-    struct ASTNode* node;
-    struct VariableAssigment* var_assig;
     HULK_Op token;
+    struct ASTNode* node;
     struct { struct ASTNode** nodes;  int count;} node_list;
+    struct VariableAssigment* var_assig;
     struct { struct VariableAssigment** list; int count; } var_assig_list;
     struct { char* name; char* type;} param_info;
     struct { char** names ; char** types; int count;} param_list_info;
-    struct { char* name; char** param_names; char** param_types ; int param_count; char* return_type;} function_header;
+    struct { char* name; char** param_names; char** param_types; int param_count; char* return_type;} function_header;
+    struct { char* name; char** param_names; char** param_types; int param_count;  
+             char* parent_name; struct ASTNode** parent_args; int parent_args_count;} type_def_header;
     
 }
 
@@ -40,17 +42,18 @@ TypeTable *type_table;
 %token AND OR NOT
 %token SEMICOLON COLON COMMA LPAREN RPAREN LBRACKET RBRACKET
 %token IF ELIF ELSE WHILE LET IN
-%token ASSIGN REASSIGN FUNCTION ARROW
+%token ASSIGN REASSIGN FUNCTION ARROW TYPE INHERITS
 
-%type<node> Expression OptionalExpression ExprBlock OrExpr AndExpr CompExpr AddExpr MultExpr PowExpr T
-%type<node> IfExpr Else_Elif_Branch WhileLoopExpr LetInExpr FunctionDefList FunctionDefinition FunctionBody
-%type<node_list> StatementList OptionalStatementList ArgList OptionalArgList
+%type<node> Statement Expression OptionalStatement ExprBlock OrExpr AndExpr CompExpr AddExpr MultExpr PowExpr T WhileLoopExpr LetInExpr
+%type<node> IfExpr Else_Elif_Branch FunctionDefList FunctionDefinition FunctionBody TypeDefinition TypeDefinitionBody TypeDefExpr
+%type<node_list> ExpressionList OptionalExpressionList ArgList OptionalArgList OptionalParentArgs TypeExprList OptionalTypeExprList
 %type<var_assig> VariableAssigment
 %type<var_assig_list> VariableAssigmentList
 %type<function_header> FunctionHeader
-%type<sval> OptionalType
+%type<sval> OptionalType OptionalInherits
 %type<param_info> Parameter
-%type<param_list_info> ParameterList
+%type<param_list_info> ParameterList OptionalTypeParams
+%type<type_def_header> TypeDefinitionHeader
 
 %left OR
 %left AND
@@ -64,15 +67,14 @@ TypeTable *type_table;
 
 
 %%
-Program                 : FunctionDefList OptionalExpression OptionalEnd { root_node = create_program_node((FunctionDefinitionListNode*)$1, $2, type_table) ; }
+Program                 : FunctionDefList OptionalStatement OptionalEnd { root_node = create_program_node((FunctionDefinitionListNode*)$1, $2, type_table) ; }
                         ;
 
-FunctionDefList         : FunctionDefinition FunctionDefList     
-                        { $$ = append_function_definition_to_list(
-                          (FunctionDefinitionListNode*)$2, 
-                          (FunctionDefinitionNode*)$1); 
+FunctionDefList         : FUNCTION FunctionDefinition FunctionDefList     
+                        { 
+                          $$ = append_function_definition_to_list( (FunctionDefinitionListNode*)$3 , (FunctionDefinitionNode*)$2 ); 
                         } 
-                        | /* vacío */                            { $$ = create_function_definition_list_node(type_table) ; } 
+                        | /* vacío */   { $$ = create_function_definition_list_node(type_table) ; } 
                         ;
 
 FunctionDefinition      : FunctionHeader FunctionBody 
@@ -87,13 +89,13 @@ FunctionDefinition      : FunctionHeader FunctionBody
                         }
                         ;
 
-FunctionHeader          : FUNCTION ID LPAREN ParameterList RPAREN OptionalType 
+FunctionHeader          :  ID LPAREN ParameterList RPAREN OptionalType 
                         {
-                            $$.name = $2;
-                            $$.param_names = $4.names;
-                            $$.param_types = $4.types;
-                            $$.param_count = $4.count;
-                            $$.return_type = $6;
+                           $$.name = $1;
+                           $$.param_names = $3.names;
+                           $$.param_types = $3.types;
+                           $$.param_count = $3.count;
+                           $$.return_type = $5;
                         }
                         ;
 
@@ -133,8 +135,12 @@ FunctionBody            : ARROW Expression SEMICOLON         { $$ = $2;}
                         | ExprBlock OptionalEnd              { $$ = $1; }
                         ;
 
-OptionalEnd             : SEMICOLON
-                        | /* empty */
+OptionalStatement       : Statement     { $$ = $1; }
+                        | /* empty */   { $$ = NULL;}
+                        ;
+
+Statement               : Expression        {$$ = $1;}
+                        | TypeDefinition    {$$ = $1;}
                         ;
 
 Expression              : OrExpr  {$$ = $1;}
@@ -143,8 +149,68 @@ Expression              : OrExpr  {$$ = $1;}
                         | LetInExpr {$$ = $1;}
                         ;
 
-OptionalExpression      : Expression
-                        | /* empty */   {$$ = NULL;}
+TypeDefinition          : TypeDefinitionHeader TypeDefinitionBody
+                        {
+                            create_type_def_node($1.name, $1.param_names, $1.param_types, $1.param_count, $1.parent_name, 
+                            $1.parent_args, $1.parent_args_count, $2, type_table);
+                        }
+                        ;
+
+TypeDefinitionHeader    : TYPE ID OptionalTypeParams OptionalInherits OptionalParentArgs
+                        {
+                          $$.name = $2;
+                          $$.param_names = $3.names;
+                          $$.param_types = $3.types;
+                          $$.param_count = $3.count;
+                          $$.parent_name = $4;
+                          $$.parent_args = $5.nodes;
+                          $$.parent_args_count = $5.count;
+                        }
+                        ;
+
+OptionalTypeParams      : /*empty*/                     {$$.names = NULL; $$.types = NULL; $$.count = 0; }
+                        | LPAREN ParameterList RPAREN   {$$ = $2;}
+                        ;
+
+OptionalInherits        : INHERITS ID                   {$$ = $2;}
+                        | /*empty*/                     {$$ = "Object";}
+
+OptionalParentArgs      : /*empty*/                     {$$.nodes = NULL; $$.count = 0;}
+                        | LPAREN ArgList RPAREN         {$$ = $2;}
+
+
+TypeDefinitionBody      : LBRACKET TypeExprList RBRACKET
+                        {
+                            create_expression_block_node($2.nodes, $2.count, type_table);
+                        }
+
+TypeExprList            : OptionalTypeExprList TypeDefExpr OptionalEnd
+                        {
+                            int new_count = $1.count + 1;
+                            ASTNode** all_nodes = realloc($1.nodes, new_count * sizeof(ASTNode*));
+                            if (!all_nodes) DIE("Out of memory in ExpressionList");
+                            all_nodes[new_count - 1] = $2;
+                            $$.nodes = all_nodes;
+                            $$.count = new_count;
+                        }
+                        | /*empty*/                 { $$.nodes = NULL; $$.count = 0; }
+                        ;
+
+
+OptionalTypeExprList    : /* empty */               { $$.nodes = NULL; $$.count = 0; }
+                        | OptionalTypeExprList TypeDefExpr SEMICOLON
+                        {
+                            int new_count = $1.count + 1;
+                            ASTNode** nodes = realloc($1.nodes, new_count * sizeof(ASTNode*));
+                            if (!nodes) DIE("Out of memory in ExpressionListOpt");
+                            nodes[new_count - 1] = $2;
+                            $$.nodes = nodes;
+                            $$.count = new_count;
+                        }
+                        ;
+
+TypeDefExpr             : FunctionDefinition    {$$ = $1;}
+                        | VariableAssigment     {$$ = create_variable_assigment_node($1 , type_table);}
                         ;
 
 IfExpr                  : IF LPAREN Expression RPAREN Expression  Else_Elif_Branch %prec IFX
@@ -249,7 +315,7 @@ T                       : NUMBER                    { $$ = create_number_literal
                         }
                         ;
 
-ArgList                 : OptionalArgList Expression OptionalEnd
+ArgList                 : OptionalArgList Expression
                         {
                             int new_count = $1.count + 1;
                             ASTNode** all_nodes = realloc($1.nodes, new_count * sizeof(ASTNode*));
@@ -273,17 +339,17 @@ OptionalArgList         :  /*empty*/                { $$.nodes = NULL; $$.count 
                         }
                         ;
 
-ExprBlock               : LBRACKET StatementList RBRACKET 
+ExprBlock               : LBRACKET ExpressionList RBRACKET 
                         {
                             $$ = create_expression_block_node($2.nodes, $2.count, type_table);
                             free($2.nodes);
                         }
 
-StatementList           : OptionalStatementList Expression OptionalEnd
+ExpressionList           : OptionalExpressionList Expression OptionalEnd
                         {
                             int new_count = $1.count + 1;
                             ASTNode** all_nodes = realloc($1.nodes, new_count * sizeof(ASTNode*));
-                            if (!all_nodes) DIE("Out of memory in StatementList");
+                            if (!all_nodes) DIE("Out of memory in ExpressionList");
                             all_nodes[new_count - 1] = $2;
                             $$.nodes = all_nodes;
                             $$.count = new_count;
@@ -291,8 +357,8 @@ StatementList           : OptionalStatementList Expression OptionalEnd
                         |   /*empty*/               { $$.nodes = NULL; $$.count = 0; }
                         ;
 
-OptionalStatementList   : /* empty */               { $$.nodes = NULL; $$.count = 0; }
-                        | OptionalStatementList Expression SEMICOLON
+OptionalExpressionList   : /* empty */               { $$.nodes = NULL; $$.count = 0; }
+                        | OptionalExpressionList Expression SEMICOLON
                         {
                             int new_count = $1.count + 1;
                             ASTNode** nodes = realloc($1.nodes, new_count * sizeof(ASTNode*));
@@ -301,6 +367,10 @@ OptionalStatementList   : /* empty */               { $$.nodes = NULL; $$.count 
                             $$.nodes = nodes;
                             $$.count = new_count;
                         }
+                        ;
+                        
+OptionalEnd             : SEMICOLON
+                        | /* empty */
                         ;
 %%
 

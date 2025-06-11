@@ -25,7 +25,8 @@ typedef enum {
     AST_Node_Function_Definition,
     AST_Node_Function_Definition_List,
     AST_Node_Function_Call,
-    AST_Node_Program
+    AST_Node_Program,
+    AST_Node_TypeDef
 } ASTNodeType;
 
 typedef struct ASTNode {
@@ -144,6 +145,23 @@ typedef struct ProgramNode {
     ASTNode* root; // Bloque principal del programa
 } ProgramNode;
 
+typedef struct VariableAssigmentNode{
+    ASTNode base;
+    VariableAssigment* assigments;
+} VariableAssigmentNode;
+
+typedef struct TypeDefNode{
+    ASTNode base;
+    char* type_name;
+    Param** params;
+    int params_count;
+    ASTNode** params_parent;
+    int params_parent_count;
+    char* parent_name;
+    SymbolTable* scope;
+    ASTNode* body;
+} TypeDefNode;
+
 // Prototipos para crear nodos AST
 ASTNode* create_number_literal_node(double value, TypeTable *table);
 ASTNode* create_string_literal_node(char *value, TypeTable *table);
@@ -160,6 +178,7 @@ ASTNode* create_function_definition_node(const char* name, char** param_names, c
 ASTNode* create_function_definition_list_node(TypeTable *table);
 ASTNode* create_function_call_node(char* name, ASTNode** args, int arg_count, TypeTable *table);
 ASTNode* create_program_node(FunctionDefinitionListNode *function_list, ASTNode *root, TypeTable *table);
+ASTNode* create_typedef_node(char* type_name, char** params_name, char** params_type, int params_count, char* parent_name, ASTNode** params_parent, int params_parent_count, ASTNode* body, TypeTable* table);
 
 void register_func_params(FunctionDefinitionNode* node, SymbolTable* parent_scope, TypeTable* table);
 ASTNode* append_function_definition_to_list(FunctionDefinitionListNode* list, FunctionDefinitionNode* def);

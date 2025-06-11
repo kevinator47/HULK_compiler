@@ -13,5 +13,6 @@ TypeDescriptor* check_semantic_variable_node(VariableNode* node);
 TypeDescriptor* check_semantic_reassign_node(ReassignNode* node);
 TypeDescriptor* check_semantic_function_definition_node(FunctionDefinitionNode* node, TypeTable* table);
 TypeDescriptor* check_semantic_function_call_node(FunctionCallNode* node, SymbolTable* current_scope);
+TypeDescriptor* check_semantic_type_definition_node(TypeDefNode* node, SymbolTable* current_scope, TypeTable* table);
 void add_assigment_to_scope(SymbolTable* scope, VariableAssigment* assigment, TypeTable* table);
 void register_function_definition(FunctionDefinitionNode* node, SymbolTable* scope, TypeTable* table);

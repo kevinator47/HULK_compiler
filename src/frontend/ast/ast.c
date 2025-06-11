@@ -266,3 +266,47 @@ ASTNode* create_program_node(FunctionDefinitionListNode *function_list, ASTNode 
 
     return (ASTNode*) node;
 }
+
+ASTNode* create_typedef_node(char* type_name, char** params_name, char** params_type, int params_count, char* parent_name, 
+    ASTNode** params_parent, int params_parent_count, ASTNode* body, TypeTable* table)
+{
+    TypeDefNode* node = malloc(sizeof(TypeDefNode));
+
+    node->base.type = AST_Node_TypeDef;
+    node->base.return_type = type_table_lookup(table, "NULL");
+    node->base.accept = generic_ast_accept;
+
+    node->type_name = strdup(type_name);
+    node->params_count = params_count;
+    node->params = malloc(sizeof(Param *) * node->params_count);
+    node->body = body;
+    node->scope = NULL;
+
+    for (int i = 0; i < node->params_count; i++)
+    {
+        Param* param = malloc(sizeof(Param));
+        param->name = strdup(params_name[i]);
+        param->static_type = strdup(params_type[i]);
+        node->params[i] = param;
+    }
+
+    node->parent_name = strdup(params_name);
+    node->params_parent_count = params_parent_count;
+    if(params_parent_count != 0)
+    {
+        node->params_parent = malloc(sizeof(ASTNode * ) * params_parent_count);
+        for (int i = 0; i < node->params_parent_count; i++)
+        {
+            ASTNode* param = malloc(sizeof(ASTNode));
+            param->type = params_parent[i]->type;
+            param->return_type = params_parent[i]->return_type;
+            param->accept = params_parent[i]->accept;
+            node->params_parent[i] = param;
+        }
+    }
+    else
+    {
+        node->params_parent = NULL;
+    }
+    return (ASTNode *)node;
+}

@@ -120,6 +120,19 @@ ASTNode* create_while_loop_node(ASTNode *condition, ASTNode *body, TypeTable *ta
     return (ASTNode*) node;
 }
 
+ASTNode* create_variable_assigment_node(VariableAssigment* assigment, TypeTable* table) {
+    VariableAssigmentNode* node = malloc(sizeof(VariableAssigmentNode));
+    if(!node) return NULL;
+
+    node->base.type = AST_Node_Variable_Assigment;
+    node->base.return_type = type_table_lookup(table, "Undefined");
+    node->base.accept = generic_ast_accept;
+    node->scope = NULL;
+    node->assigment = assigment;
+
+    return (ASTNode*) node;
+}
+
 ASTNode* create_let_in_node(VariableAssigment** assigments, int assigment_count, ASTNode* body, TypeTable* table) {
     LetInNode* node = malloc(sizeof(LetInNode));
     if (!node) return NULL;
@@ -267,46 +280,52 @@ ASTNode* create_program_node(FunctionDefinitionListNode *function_list, ASTNode 
     return (ASTNode*) node;
 }
 
-ASTNode* create_typedef_node(char* type_name, char** params_name, char** params_type, int params_count, char* parent_name, 
-    ASTNode** params_parent, int params_parent_count, ASTNode* body, TypeTable* table)
+ASTNode* create_type_definition_node(char* type_name, char** param_names, char** param_types, int param_count, char* parent_name, 
+    ASTNode** parent_args, int parent_arg_count, ASTNode* body, TypeTable* table)
 {
-    TypeDefNode* node = malloc(sizeof(TypeDefNode));
+    TypeDefinitionNode* node = malloc(sizeof(TypeDefinitionNode));
 
-    node->base.type = AST_Node_TypeDef;
-    node->base.return_type = type_table_lookup(table, "NULL");
+    node->base.type = AST_Node_Type_Definition;
+    node->base.return_type = type_table_lookup(table, "Null");
     node->base.accept = generic_ast_accept;
 
     node->type_name = strdup(type_name);
-    node->params_count = params_count;
-    node->params = malloc(sizeof(Param *) * node->params_count);
     node->body = body;
     node->scope = NULL;
 
-    for (int i = 0; i < node->params_count; i++)
-    {
-        Param* param = malloc(sizeof(Param));
-        param->name = strdup(params_name[i]);
-        param->static_type = strdup(params_type[i]);
-        node->params[i] = param;
-    }
+    node->param_count = param_count;
 
-    node->parent_name = strdup(params_name);
-    node->params_parent_count = params_parent_count;
-    if(params_parent_count != 0)
+    if(param_count == 0)
     {
-        node->params_parent = malloc(sizeof(ASTNode * ) * params_parent_count);
-        for (int i = 0; i < node->params_parent_count; i++)
-        {
-            ASTNode* param = malloc(sizeof(ASTNode));
-            param->type = params_parent[i]->type;
-            param->return_type = params_parent[i]->return_type;
-            param->accept = params_parent[i]->accept;
-            node->params_parent[i] = param;
-        }
+        node->params = NULL;
     }
     else
     {
-        node->params_parent = NULL;
+        node->params = malloc(sizeof(Param*) * node->param_count);
+        for (int i = 0; i < node->param_count; i++)
+        {
+            Param* param = malloc(sizeof(Param));
+            param->name = strdup(param_names[i]);
+            param->static_type = strdup(param_types[i]);
+            node->params[i] = param;
+        }
     }
-    return (ASTNode *)node;
+    
+    node->parent_name = strdup(parent_name);
+    node->parent_arg_count = parent_arg_count;
+    
+    if(parent_arg_count == 0)
+    {
+        node->parent_args = NULL ;
+    }
+    else
+    {
+        node->parent_args = malloc(sizeof(ASTNode*) * parent_arg_count);
+        for (int i = 0; i < node->parent_arg_count; i++)
+        {
+            node->parent_args[i] = parent_args[i];
+        }
+    }
+    
+    return (ASTNode*)node;
 }

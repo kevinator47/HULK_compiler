@@ -151,7 +151,7 @@ Expression              : OrExpr  {$$ = $1;}
 
 TypeDefinition          : TypeDefinitionHeader TypeDefinitionBody
                         {
-                            create_type_def_node($1.name, $1.param_names, $1.param_types, $1.param_count, $1.parent_name, 
+                            create_type_definition_node($1.name, $1.param_names, $1.param_types, $1.param_count, $1.parent_name, 
                             $1.parent_args, $1.parent_args_count, $2, type_table);
                         }
                         ;
@@ -181,10 +181,11 @@ OptionalParentArgs      : /*empty*/                     {$$.nodes = NULL; $$.cou
 
 TypeDefinitionBody      : LBRACKET TypeExprList RBRACKET
                         {
+                            printf("get");
                             create_expression_block_node($2.nodes, $2.count, type_table);
                         }
 
-TypeExprList            : OptionalTypeExprList TypeDefExpr OptionalEnd
+TypeExprList            : OptionalTypeExprList TypeDefExpr SEMICOLON
                         {
                             int new_count = $1.count + 1;
                             ASTNode** all_nodes = realloc($1.nodes, new_count * sizeof(ASTNode*));
@@ -209,7 +210,7 @@ OptionalTypeExprList    : /* empty */               { $$.nodes = NULL; $$.count 
                         }
                         ;
 
-TypeDefExpr             : FunctionDefinition    {$$ = $1;}
+TypeDefExpr             : FunctionDefinition    {$$ = $1; printf("function def found\n");}
                         | VariableAssigment     {$$ = create_variable_assigment_node($1 , type_table);}
                         ;
 

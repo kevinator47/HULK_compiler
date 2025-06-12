@@ -136,9 +136,73 @@ TypeDescriptor* semantic_visit(SemanticVisitor* visitor, ASTNode* node, SymbolTa
         return check_semantic_function_call_node(func_call, current_scope);
         break;
     }
+    case AST_Node_Type_Definition: {
+        TypeDefinitionNode* type_node = (TypeDefinitionNode*) node;
+
+        // Paso 1: Validar los argumentos al padre
+        TypeDescriptor* parent_type = type_table_lookup(visitor->typeTable, type_node->parent_name);
+        if (!parent_type || !parent_type->initializated || (parent_type->tag == HULK_Type_UserDefined && !parent_type->info)) {
+            fprintf(stderr, "[Semantic Error] Type '%s' inherits from unknown or uninitialized type '%s'\n", type_node->type_name, type_node->parent_name);
+            exit(1);
+        }
+        if (parent_type->tag != HULK_Type_UserDefined)
+        {
+            if(type_node->parent_arg_count != 0)
+            {
+                fprintf(stderr, "[Semantic Error] Builtin type '%s' cannot receive arguments'\n", parent_type->type_name);
+                exit(1);    
+            }
+        }
+        else if (type_node->parent_arg_count != parent_type->info->param_count) {
+            fprintf(stderr, "[Semantic Error] Type '%s' inherits from '%s' with incorrect number of arguments (%d expected, %d given)\n",
+                type_node->type_name, type_node->parent_name,
+                parent_type->info->param_count, type_node->parent_arg_count);
+            exit(1);
+        }
+        
+        // Paso 2: Validar tipos de los argumentos heredados
+        for (int i = 0; i < type_node->parent_arg_count; i++) { 
+
+            char* arg_name = parent_type->info->params_name[i];
+            SymbolTable* parent_scope = parent_type->info->scope;
+            Symbol* field_symbol = lookup_symbol_type_field(parent_scope, arg_name, true);
+
+            TypeDescriptor* expected = field_symbol->type;
+            TypeDescriptor* given = semantic_visit(visitor, type_node->parent_args[i], type_node->scope);
+
+            if (!conforms(given, expected)) {
+                fprintf(stderr, "[Semantic Error] Inheritance argument %d in type '%s' expects type '%s' but got '%s'\n",
+                    i, type_node->type_name,
+                    expected->type_name, given->type_name);
+                exit(1);
+            }
+        }
+
+        // Paso 3: Validar el cuerpo del tipo
+        for (int i = 0; i < type_node->body->expression_count; i++) {
+            semantic_visit(visitor, type_node->body->expressions[i], type_node->scope);
+        }
+
+        return type_table_lookup(visitor->typeTable, "Null");
+        break;
+    }
+
+    case AST_Node_Type_Definition_List: {
+        TypeDefinitionListNode* list_node = (TypeDefinitionListNode*) node;
+
+        // Visitar cada definiicion de tipo
+        for (int i = 0; i < list_node->count; i++) {
+            semantic_visit(visitor, (ASTNode*) list_node->definitions[i], current_scope);
+        }
+
+        return type_table_lookup(visitor->typeTable, "Null");
+        break;
+    }
     case AST_Node_Program: {
         ProgramNode* program_node = (ProgramNode*) node;
+        register_types(program_node->type_definitions, visitor->typeTable, current_scope);
         semantic_visit(visitor, (ASTNode*)program_node->function_list, current_scope);
+        semantic_visit(visitor, (ASTNode*)program_node->type_definitions, current_scope);
         program_node->base.return_type = semantic_visit(visitor, program_node->root, current_scope);
         return program_node->base.return_type;
         break; 

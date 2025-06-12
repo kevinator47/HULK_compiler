@@ -159,7 +159,7 @@ typedef struct TypeDefinitionNode {
     int parent_arg_count;   // Cantidad de argumentos(0 si no se especifica)
     
     SymbolTable* scope;     // Scope donde estaran atributos y funciones
-    ASTNode* body;          // Cuerpo de la declaracion
+    ExpressionBlockNode* body;          // Cuerpo de la declaracion
 } TypeDefinitionNode;
 
 typedef struct TypeDefinitionListNode {
@@ -194,7 +194,7 @@ ASTNode* create_function_definition_node(const char* name, char** param_names, c
 ASTNode* create_function_definition_list_node(TypeTable *table);
 ASTNode* create_function_call_node(char* name, ASTNode** args, int arg_count, TypeTable *table);
 ASTNode* create_type_definition_node(char* type_name, char** param_names, char** param_types, int param_count, char* parent_name, ASTNode** parent_args, int parent_arg_count, ASTNode* body, TypeTable* table);
-ASTNode* create_type_definition_list_node(ASTNode** list, int count, TypeTable* table);
+ASTNode* create_type_definition_list_node(TypeDefinitionNode** list, int count, TypeTable* table);
 ASTNode* create_program_node(ASTNode* function_list, ASTNode* type_list, ASTNode *root, TypeTable *table);
 
 void register_func_params(FunctionDefinitionNode* node, SymbolTable* parent_scope, TypeTable* table);

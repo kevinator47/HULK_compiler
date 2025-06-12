@@ -83,6 +83,14 @@ Symbol* lookup_symbol(SymbolTable* table, const char* name, bool search_parent) 
     return NULL; // Symbol not found
 }
 
+Symbol* lookup_symbol_type_field(SymbolTable* table, const char* name, bool search_parent) {
+    Symbol* symbol = lookup_symbol(table, name, search_parent);
+    if (symbol && symbol->kind == SYMBOL_TYPE_FIELD) {
+        return symbol;
+    }
+    return NULL; // No se encontró o no es un campo de tipo
+}
+
 Symbol* lookup_function_by_signature(SymbolTable* table, const char* name, int arg_count) {
     Symbol* func_symbol = lookup_symbol(table, name, true);
 

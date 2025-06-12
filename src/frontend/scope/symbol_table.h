@@ -36,6 +36,7 @@ void free_symbol_table(SymbolTable *table);
 
 void insert_symbol(SymbolTable *table, Symbol *symbol);
 Symbol* lookup_symbol(SymbolTable *table, const char *name, bool search_in_parent);
+Symbol* lookup_symbol_type_field(SymbolTable* table, const char* name, bool search_parent);
 Symbol* lookup_function_by_signature(SymbolTable* table, const char* name, int arg_count);
 void set_symbol_return_type(SymbolTable *table, const char *name, TypeDescriptor *return_type);
 

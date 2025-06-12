@@ -76,7 +76,7 @@ LLVMModuleRef generate_code(ProgramNode* program, LLVMCodeGenerator* generator) 
 
     //Generar el cuerpo de la funcion main
     LLVMTypeRef double_type = LLVMDoubleTypeInContext(generator->context);
-    LLVMTypeRef main_fn_type = LLVMFunctionType(double_type, NULL, 0, 0);
+    LLVMTypeRef main_fn_type = LLVMFunctionType(get_llvm_type_from_descriptor(program->root->return_type, generator->context), NULL, 0, 0);
     LLVMValueRef main_fn = LLVMAddFunction(generator->module, "main", main_fn_type);
     LLVMBasicBlockRef entry_block = LLVMAppendBasicBlockInContext(generator->context, main_fn, "entry");
 

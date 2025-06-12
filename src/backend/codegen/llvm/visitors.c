@@ -56,6 +56,11 @@ LLVMValueRef visit_BinaryOp_impl(LLVMCodeGenerator* self, BinaryOperationNode* n
     LLVMValueRef left_val = node->left->accept(node->left, self);
     LLVMValueRef right_val = node->right->accept(node->right, self);
 
+    if (LLVMGetTypeKind(LLVMTypeOf(left_val)) == LLVMPointerTypeKind)
+         left_val = LLVMBuildLoad2(self->builder, LLVMGetElementType(LLVMTypeOf(left_val)), left_val, "loadtmp");
+    if (LLVMGetTypeKind(LLVMTypeOf(right_val)) == LLVMPointerTypeKind)
+        right_val = LLVMBuildLoad2(self->builder, LLVMGetElementType(LLVMTypeOf(right_val)), right_val, "loadtmp");
+
     printf("[visit_BinaryOp_impl] left_val: %p, right_val: %p\n", (void*)left_val, (void*)right_val);
 
     if (!left_val || !right_val) {
@@ -171,6 +176,11 @@ LLVMValueRef visit_Conditional_impl(LLVMCodeGenerator* self, ConditionalNode* no
     LLVMPositionBuilderAtEnd(self->builder, merge_bb);
 
     if (then_val && else_val) {
+        if (LLVMGetTypeKind(LLVMTypeOf(then_val)) == LLVMPointerTypeKind)
+            then_val = LLVMBuildLoad2(self->builder, LLVMGetElementType(LLVMTypeOf(then_val)), then_val, "loadtmp");
+        if (LLVMGetTypeKind(LLVMTypeOf(else_val)) == LLVMPointerTypeKind)
+            else_val = LLVMBuildLoad2(self->builder, LLVMGetElementType(LLVMTypeOf(else_val)), else_val, "loadtmp");
+
         LLVMTypeRef phi_type = LLVMTypeOf(then_val);
         LLVMValueRef phi = LLVMBuildPhi(self->builder, phi_type, "iftmp");
         LLVMAddIncoming(phi, &then_val, &then_bb, 1);
@@ -223,6 +233,13 @@ LLVMValueRef visit_ExpressionBlock_impl(LLVMCodeGenerator* self, ExpressionBlock
     for (int i = 0; i < node->expression_count; ++i) {
         last_val = node->expressions[i]->accept(node->expressions[i], self);
     }
+    if (last_val) {
+        LLVMTypeRef t = LLVMTypeOf(last_val);
+        if (LLVMGetTypeKind(t) == LLVMPointerTypeKind &&
+            LLVMGetElementType(t) != LLVMInt8TypeInContext(self->context)) {
+            last_val = LLVMBuildLoad2(self->builder, LLVMGetElementType(t), last_val, "loadtmp");
+        }
+    }
     return last_val;
 }
 
@@ -235,8 +252,16 @@ LLVMValueRef visit_Variable_impl(LLVMCodeGenerator* self, VariableNode* node) {
         return NULL;
     }
 
-    return LLVMBuildLoad2(self->builder, LLVMTypeOf(symbol->value), symbol->value, node->name);
-}
+    LLVMTypeRef t = LLVMTypeOf(symbol->value);
+
+    if (LLVMGetTypeKind(t) == LLVMPointerTypeKind &&
+        LLVMGetElementType(t) == LLVMInt8TypeInContext(self->context)) {
+        return symbol->value;
+    }
+    if (LLVMGetTypeKind(t) == LLVMPointerTypeKind) {
+        return LLVMBuildLoad2(self->builder, LLVMGetElementType(t), symbol->value, node->name);
+    }
+    return symbol->value;}
 
 LLVMValueRef visit_ReassignNode_impl(LLVMCodeGenerator* self, ReassignNode* node){
     IrSymbol* symbol = lookup_ir_symbol(current_scope(self->scope_stack), node->name);
@@ -333,6 +358,7 @@ LLVMValueRef visit_FunctionDefinition_impl(LLVMCodeGenerator* self, FunctionDefi
 void declare_FunctionHeaders_impl(LLVMCodeGenerator* self, FunctionDefinitionListNode* node) {
     for (int i = 0; i < node->function_count; i++) {
         FunctionDefinitionNode* fn_node = node->functions[i];
+        Symbol* function_symbol = lookup_function_by_signature(fn_node->scope, fn_node->name, fn_node->param_count);
         if(fn_node == NULL) {
             fprintf(stderr, "Error: Nodo de función nulo en declare_FunctionHeaders_impl.\n");
             continue;
@@ -345,7 +371,19 @@ void declare_FunctionHeaders_impl(LLVMCodeGenerator* self, FunctionDefinitionLis
         for (int j = 0; j < fn_node->param_count; ++j) {
             param_types[j] = get_llvm_type_from_descriptor(fn_node->scope->symbols[j]->type, self->context);
         }
-        LLVMTypeRef ret_type = LLVMDoubleTypeInContext(self->context); // O el tipo correcto
+        if(fn_node->static_return_type == NULL) {
+            fprintf(stderr, "Error: Tipo de retorno estático nulo para la función '%s'.\n", fn_node->name);
+            free(param_types);
+            return;
+        }
+        if(fn_node->base.return_type == NULL) {
+            fprintf(stderr, "Error: Tipo de retorno nulo para la función '%s'.\n", fn_node->name);
+            free(param_types);
+            return;
+        }
+        printf("La funcion devuelve: %s\n", function_symbol->type->type_name);
+        printf("El tipo de retorno de la función %s es %s\n", fn_node->name, fn_node->static_return_type);
+        LLVMTypeRef ret_type = get_llvm_type_from_descriptor(function_symbol->type, self->context); // O el tipo correcto
         LLVMTypeRef fn_type = LLVMFunctionType(ret_type, param_types, fn_node->param_count, 0);
         LLVMAddFunction(self->module, fn_node->name, fn_type);
         free(param_types);
@@ -377,6 +415,8 @@ LLVMValueRef visit_FunctionCall_impl(LLVMCodeGenerator* self, FunctionCallNode* 
     LLVMValueRef* args = malloc(node->arg_count * sizeof(LLVMValueRef));
     for (int i = 0; i < node->arg_count; ++i) {
         args[i] = node->args[i]->accept(node->args[i], self);
+        if (LLVMGetTypeKind(LLVMTypeOf(args[i])) == LLVMPointerTypeKind)
+            args[i] = LLVMBuildLoad2(self->builder, LLVMGetElementType(LLVMTypeOf(args[i])), args[i], "loadtmp");
         if (!args[i]) {
             fprintf(stderr, "Error: No se pudo generar el argumento %d para la función '%s'.\n", i, node->name);
             free(args);

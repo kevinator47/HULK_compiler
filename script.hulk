@@ -1,8 +1,11 @@
 function suma(x : Number,y : Number) : Number{
     x + y;
 }
-function resta(x : Number,y : Number) : Number{
-    x - y;
+function isEven(x : Number) : Bool {
+    if (x % 2 == 0){ 
+        true;
+    }
+    else false;
 }
 function gcd(a : Number,b : Number): Number {if(a%b == 0) {
                                             b;
@@ -12,4 +15,6 @@ function gcd(a : Number,b : Number): Number {if(a%b == 0) {
 {
     gcd(16,10);
     suma(10,2);
+    "Hola";
+    isEven(4);
 }

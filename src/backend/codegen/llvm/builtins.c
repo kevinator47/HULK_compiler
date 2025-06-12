@@ -37,6 +37,7 @@ LLVMValueRef emit_builtin_print(LLVMCodeGenerator* self, FunctionCallNode* node)
 }
 
 LLVMValueRef generate_builtin_function(LLVMCodeGenerator* self, FunctionCallNode* node) {
+    printf("generate_builtin_function: name = %s\n", node->name);
     switch (get_builtin_kind(node->name)) {
         case BUILTIN_PRINT:
             return emit_builtin_print(self, node);

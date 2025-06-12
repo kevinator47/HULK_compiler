@@ -19,15 +19,16 @@ typedef enum {
     AST_Node_Expression_Block,
     AST_Node_Conditional,
     AST_Node_While_Loop,
-    AST_Node_Variable_Assigment,
     AST_Node_Let_In,
     AST_Node_Variable,
+    AST_Node_Variable_Assigment,
     AST_Node_Reassign,
     AST_Node_Function_Definition,
     AST_Node_Function_Definition_List,
     AST_Node_Function_Call,
     AST_Node_Program,
     AST_Node_Type_Definition,
+    AST_Node_Type_Definition_List,
 } ASTNodeType;
 
 typedef struct ASTNode {
@@ -44,7 +45,7 @@ typedef struct LiteralNode {
         double number_value;
         char *string_value;
         int bool_value;
-    } value;    // Valor del literal (puede ser un número, cadena o booleano)
+    } value;    
 } LiteralNode;
 
 typedef struct UnaryOperationNode {
@@ -88,12 +89,6 @@ typedef struct VariableAssigment {
     ASTNode* value;
 } VariableAssigment;
 
-typedef struct VariableAssigmentNode {
-    ASTNode base;
-    VariableAssigment* assigment;
-    SymbolTable* scope;
-} VariableAssigmentNode;
-
 typedef struct LetInNode {
     ASTNode base;
     SymbolTable* scope;
@@ -107,6 +102,12 @@ typedef struct VariableNode {
     char* name;
     SymbolTable* scope; // Scope donde se encuentra la variable
 } VariableNode;
+
+typedef struct VariableAssigmentNode {
+    ASTNode base;
+    VariableAssigment* assigment;
+    SymbolTable* scope;
+} VariableAssigmentNode;
 
 typedef struct ReassignNode {
     ASTNode base ;
@@ -132,7 +133,7 @@ typedef struct FunctionDefinitionNode {
 
 typedef struct FunctionDefinitionListNode {
     // Lista de definiciones de funciones
-    ASTNode base; // Nodo base del AST
+    ASTNode base;                       // Nodo base del AST
     FunctionDefinitionNode** functions; // Array de nodos de definición de funciones
     int function_count;                 // Número de funciones en la lista
 } FunctionDefinitionListNode;
@@ -145,13 +146,7 @@ typedef struct FunctionCallNode {
     SymbolTable* scope;
 } FunctionCallNode;
 
-typedef struct ProgramNode {
-    // Nodo que representa un programa completo
-    ASTNode base; // Nodo base del AST
-    FunctionDefinitionListNode* function_list; // Lista de definiciones de funciones
-    ASTNode* root; // Bloque principal del programa
-} ProgramNode;
-typedef struct TypeDefinitionNode{
+typedef struct TypeDefinitionNode {
     ASTNode base;          
     
     char* type_name;        // Nombre del tipo
@@ -167,6 +162,21 @@ typedef struct TypeDefinitionNode{
     ASTNode* body;          // Cuerpo de la declaracion
 } TypeDefinitionNode;
 
+typedef struct TypeDefinitionListNode {
+    ASTNode base;
+    TypeDefinitionNode** definitions;
+    int count;
+} TypeDefinitionListNode ;
+
+typedef struct ProgramNode {
+    // Nodo que representa un programa completo
+    ASTNode base; // Nodo base del AST
+    FunctionDefinitionListNode* function_list;  // Lista de definiciones de funciones
+    TypeDefinitionListNode* type_definitions;   // Lista de definiciones de tipos
+    ASTNode* root; // Bloque principal del programa
+} ProgramNode;
+
+
 // Prototipos para crear nodos AST
 ASTNode* create_number_literal_node(double value, TypeTable *table);
 ASTNode* create_string_literal_node(char *value, TypeTable *table);
@@ -175,16 +185,17 @@ ASTNode* create_unary_operation_node(HULK_Op operator, ASTNode *operand, TypeTab
 ASTNode* create_binary_operation_node(HULK_Op operator, ASTNode *left, ASTNode *right, TypeTable *table);
 ASTNode* create_expression_block_node(ASTNode **expressions, int expression_count, TypeTable *table);
 ASTNode* create_conditional_node(ASTNode *condition, ASTNode *then_branch, ASTNode *else_branch, TypeTable *table);
-ASTNode* create_while_loop_node(ASTNode *condition, ASTNode *body, TypeTable *table);
-ASTNode* create_variable_assigment_node(VariableAssigment* assigment, TypeTable* table); 
+ASTNode* create_while_loop_node(ASTNode *condition, ASTNode *body, TypeTable *table); 
 ASTNode* create_let_in_node(VariableAssigment** assigments, int assigment_count, ASTNode *body, TypeTable *table);
 ASTNode* create_variable_node(char *name, TypeTable *table);
+ASTNode* create_variable_assigment_node(VariableAssigment* assigment, TypeTable* table);
 ASTNode* create_reassign_node(char *name, ASTNode *value, TypeTable *table);
 ASTNode* create_function_definition_node(const char* name, char** param_names, char** param_types, int param_count, char* return_type, ASTNode* body, TypeTable* table);
 ASTNode* create_function_definition_list_node(TypeTable *table);
 ASTNode* create_function_call_node(char* name, ASTNode** args, int arg_count, TypeTable *table);
-ASTNode* create_program_node(FunctionDefinitionListNode *function_list, ASTNode *root, TypeTable *table);
 ASTNode* create_type_definition_node(char* type_name, char** param_names, char** param_types, int param_count, char* parent_name, ASTNode** parent_args, int parent_arg_count, ASTNode* body, TypeTable* table);
+ASTNode* create_type_definition_list_node(ASTNode** list, int count, TypeTable* table);
+ASTNode* create_program_node(ASTNode* function_list, ASTNode* type_list, ASTNode *root, TypeTable *table);
 
 void register_func_params(FunctionDefinitionNode* node, SymbolTable* parent_scope, TypeTable* table);
 ASTNode* append_function_definition_to_list(FunctionDefinitionListNode* list, FunctionDefinitionNode* def);
@@ -197,13 +208,14 @@ void print_binary_operation_node(BinaryOperationNode *node, int indent);
 void print_expression_block_node(ExpressionBlockNode *node, int indent_level);
 void print_conditional_node(ConditionalNode *node, int indent_level);
 void print_while_loop_node(WhileLoopNode *node, int indent_level);
-void print_variable_assigment_node(VariableAssigmentNode*, int indent_level);
 void print_let_in_node(LetInNode *node, int indent_level);
 void print_variable_node(VariableNode *node, int indent_level);
+void print_variable_assigment_node(VariableAssigmentNode*, int indent_level);
 void print_reassign_node(ReassignNode *node, int indent_level);
 void print_function_definition_node(FunctionDefinitionNode *node, int indent_level);
 void print_function_definition_list_node(FunctionDefinitionListNode *node, int indent_level);
 void print_type_definition_node(TypeDefinitionNode* node, int indent_level);
+void print_type_definition_list_node(TypeDefinitionListNode* node, int indent_level);
 void print_function_call_node(FunctionCallNode* node , int indent_level);
 void print_program_node(ProgramNode *node, int indent_level);
 void print_indent(int indent);
@@ -216,13 +228,15 @@ void free_binary_operation_node(BinaryOperationNode* node);
 void free_expression_block_node(ExpressionBlockNode* node);
 void free_conditional_node(ConditionalNode* node);
 void free_while_loop_node(WhileLoopNode* node);
-void free_variable_assigment_node(VariableAssigmentNode* node);
 void free_let_in_node(LetInNode* node);
 void free_variable_node(VariableNode* node);
+void free_variable_assigment_node(VariableAssigmentNode* node);
 void free_reassign_node(ReassignNode* node);
 void free_function_definition_node(FunctionDefinitionNode* node);
-void free_function_definition_list(FunctionDefinitionListNode* node);
+void free_function_definition_list_node(FunctionDefinitionListNode* node);
 void free_function_call_node(FunctionCallNode* node);
 void free_type_definition_node(TypeDefinitionNode* node);
+void free_type_definition_list_node(TypeDefinitionListNode* node);
 void free_program_node(ProgramNode* node);
+
 #endif // AST_H

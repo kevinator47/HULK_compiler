@@ -267,19 +267,6 @@ ASTNode* create_function_call_node(char* name, ASTNode** args, int arg_count, Ty
     return (ASTNode*) node ;    
 }
 
-ASTNode* create_program_node(FunctionDefinitionListNode *function_list, ASTNode *root, TypeTable *table) {
-    ProgramNode *node = malloc(sizeof(ProgramNode));
-    if (!node) return NULL;
-
-    node->base.type = AST_Node_Program;
-    node->base.return_type = type_table_lookup(table, "Null");
-    node->base.accept = generic_ast_accept;
-    node->function_list = function_list;
-    node->root = root;
-
-    return (ASTNode*) node;
-}
-
 ASTNode* create_type_definition_node(char* type_name, char** param_names, char** param_types, int param_count, char* parent_name, 
     ASTNode** parent_args, int parent_arg_count, ASTNode* body, TypeTable* table)
 {
@@ -326,6 +313,38 @@ ASTNode* create_type_definition_node(char* type_name, char** param_names, char**
             node->parent_args[i] = parent_args[i];
         }
     }
+
+    register_user_defined_type(table, type_name, parent_name);
     
     return (ASTNode*)node;
+}
+
+ASTNode* create_type_definition_list_node(ASTNode** list, int count, TypeTable* table) {
+    TypeDefinitionListNode* node = malloc(sizeof(TypeDefinitionListNode));
+    if (!node) return NULL;
+
+    node->base.type = AST_Node_Type_Definition_List;
+    node->base.return_type = type_table_lookup(table, "Null");
+    node->base.accept = generic_ast_accept;
+
+    node->count = count;
+    for (int i = 0; i < count; i++)
+    {
+        node->definitions[i] = (TypeDefinitionNode*) list[i];
+    }
+    return (ASTNode*) node;
+}
+
+ASTNode* create_program_node(ASTNode* function_list, ASTNode* type_definitions, ASTNode *root, TypeTable *table) {
+    ProgramNode *node = malloc(sizeof(ProgramNode));
+    if (!node) return NULL;
+
+    node->base.type = AST_Node_Program;
+    node->base.return_type = type_table_lookup(table, "Null");
+    node->base.accept = generic_ast_accept;
+    node->function_list = (FunctionDefinitionListNode*) function_list;
+    node->type_definitions = (TypeDefinitionListNode*) type_definitions;
+    node->root = root;
+
+    return (ASTNode*) node;
 }

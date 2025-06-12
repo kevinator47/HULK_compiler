@@ -45,9 +45,9 @@ TypeTable *type_table;
 %token IF ELIF ELSE WHILE LET IN
 %token ASSIGN REASSIGN FUNCTION ARROW TYPE INHERITS
 
-%type<node> Statement Expression OptionalStatement ExprBlock OrExpr AndExpr CompExpr AddExpr MultExpr PowExpr T WhileLoopExpr LetInExpr
+%type<node> Expression ExprBlock OrExpr AndExpr CompExpr AddExpr MultExpr PowExpr T WhileLoopExpr LetInExpr
 %type<node> IfExpr Else_Elif_Branch FunctionDefList FunctionDefinition FunctionBody TypeDefinition TypeDefinitionBody TypeDefExpr
-%type<node_list> ExpressionList OptionalExpressionList ArgList OptionalArgList OptionalParentArgs TypeExprList
+%type<node_list> ExpressionList OptionalExpressionList ArgList OptionalArgList OptionalParentArgs TypeExprList TypeDefinitionList
 %type<var_assig> VariableAssigment
 %type<var_assig_list> VariableAssigmentList
 %type<function_header> FunctionHeader
@@ -69,7 +69,14 @@ TypeTable *type_table;
 
 
 %%
-Program                 : FunctionDefList OptionalStatement OptionalEnd { root_node = create_program_node((FunctionDefinitionListNode*)$1, $2, type_table) ; }
+Program                 : FunctionDefList TypeDefinitionList Expression OptionalEnd 
+                        { 
+                            root_node = create_program_node(
+                                $1, 
+                                create_type_definition_list_node($2.nodes, $2.count, type_table),
+                                $3, 
+                                type_table); 
+                        }
                         ;
 
 FunctionDefList         : FUNCTION FunctionDefinition FunctionDefList     
@@ -137,18 +144,16 @@ FunctionBody            : ARROW Expression SEMICOLON         { $$ = $2;}
                         | ExprBlock OptionalEnd              { $$ = $1; }
                         ;
 
-OptionalStatement       : Statement     { $$ = $1; }
-                        | /* empty */   { $$ = NULL;}
-                        ;
-
-Statement               : Expression        {$$ = $1;}
-                        | TypeDefinition    {$$ = $1;}
-                        ;
-
-Expression              : OrExpr  {$$ = $1;}
-                        | IfExpr  {$$ = $1;}
-                        | WhileLoopExpr {$$ = $1;}
-                        | LetInExpr {$$ = $1;}
+TypeDefinitionList      : /* empty */                        { $$.nodes = NULL; $$.count = 0; }
+                        | TypeDefinition TypeDefinitionList
+                        {
+                            int new_count = $2.count + 1;
+                            ASTNode** nodes = realloc($2.nodes, new_count * sizeof(ASTNode*));
+                            if (!nodes) DIE("Out of memory in TypeDefinitionList");
+                            nodes[new_count - 1] = $1;
+                            $$.nodes = nodes;
+                            $$.count = new_count;
+                        }                        
                         ;
 
 TypeDefinition          : TypeDefinitionHeader TypeDefinitionBody
@@ -200,6 +205,12 @@ TypeExprList            : /* empty */                    { $$.nodes = NULL; $$.c
 
 TypeDefExpr             : FunctionDefinition              {$$ = $1;}
                         | VariableAssigment SEMICOLON     {$$ = create_variable_assigment_node($1 , type_table);}
+                        ;
+
+Expression              : OrExpr  {$$ = $1;}
+                        | IfExpr  {$$ = $1;}
+                        | WhileLoopExpr {$$ = $1;}
+                        | LetInExpr {$$ = $1;}
                         ;
 
 IfExpr                  : IF LPAREN Expression RPAREN Expression  Else_Elif_Branch %prec IFX

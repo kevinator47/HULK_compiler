@@ -54,7 +54,7 @@ TypeDescriptor* semantic_visit(SemanticVisitor* visitor, ASTNode* node, SymbolTa
     case AST_Node_While_Loop: {
         WhileLoopNode* while_node = (WhileLoopNode*) node;
         semantic_visit(visitor, while_node->condition, current_scope); // Visit the condition first
-        semantic_visit(visitor, while_node->body, current_scope); // Visit the body next
+        semantic_visit(visitor, while_node->body, current_scope);      // Visit the body next
         return check_semantic_while_loop_node(while_node);
         break;
     }

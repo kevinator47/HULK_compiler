@@ -28,11 +28,25 @@ TypeDescriptor* create_user_defined_type(const char *name, TypeInfo* info, TypeD
     return type;
 }
 
+TypeInfo* create_type_info(SymbolTable* scope, int count, Param** params) {
+    TypeInfo* info = malloc(sizeof(TypeInfo));
+    if (!info) return NULL;
+
+    info->scope = scope;
+    info->param_count = count;
+    info->params_name = malloc(count * sizeof(char*));
+
+    for (int i = 0; i < count; i++)
+    {
+        info->params_name[i] = strdup(params[i]->name);
+    }
+    return info;
+}
 void modify_type(TypeDescriptor* t, TypeInfo* info, TypeDescriptor* parent, bool init ) {
     // Modifica los valores de un tipo
-    t->info = info;
-    t->parent = parent;
-    t->initializated = init;
+    if (info) t->info = info;
+    if (parent) t->parent = parent;
+    if (init) t->initializated = init;
 }
 
 bool inherits_from(TypeDescriptor* t1, TypeDescriptor* t2) {
@@ -77,13 +91,8 @@ void free_type_descriptor(TypeDescriptor *type) {
 
 void free_type_info(TypeInfo *info) {
     // Libera la memoria asociada a TypeInfo.
-    if (info) {
-        for (int i = 0; i < info->param_count; i++) {
-            free(info->params_name[i]);
-        }
-        free(info->params_name);
+    if (!info) return ;
                 
-        // TODO: implementar liberación de la tabla de métodos
-        free(info);
-    }
+    // TODO: implementar liberación de la tabla de simbolos
+    free(info);   
 }

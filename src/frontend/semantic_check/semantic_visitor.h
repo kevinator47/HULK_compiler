@@ -10,6 +10,9 @@ typedef struct SemanticVisitor {
 } SemanticVisitor;
 
 SemanticVisitor* init_semantic_visitor(TypeTable* type_table);
-TypeDescriptor*  semantic_visit(SemanticVisitor* visitor, ASTNode* node, SymbolTable* current_scope);
-
+TypeDescriptor* semantic_visit(SemanticVisitor* visitor, ASTNode* node, SymbolTable* current_scope);
+void register_types(TypeDefinitionListNode* node, TypeTable* table, SymbolTable* scope);
+void register_type_fields(TypeDefinitionNode* node, TypeTable* table, SymbolTable* current_scope);
+void add_param_to_scope(SymbolTable* scope, Param* param, TypeTable* table);
+void register_field(TypeDefinitionNode* node, ASTNode* expression, TypeTable* table);
 #endif

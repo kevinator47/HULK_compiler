@@ -10,6 +10,7 @@ typedef struct TypeInfo TypeInfo;
 typedef struct Attribute Attribute;
 typedef struct ASTNode ASTNode;
 typedef struct SymbolTable SymbolTable;
+typedef struct Param Param;
 
 typedef struct TypeDescriptor {
     // Describe un tipo de dato en el lenguaje Hulk.
@@ -32,6 +33,7 @@ typedef struct TypeInfo {
 // Prototipos de funciones
 TypeDescriptor* create_builtin_type(HULK_Type tag, const char *type_name, TypeDescriptor* parent);
 TypeDescriptor* create_user_defined_type(const char *name, TypeInfo* info, TypeDescriptor* parent, bool init);
+TypeInfo* create_type_info(SymbolTable* scope, int count, Param** params);
 void modify_type(TypeDescriptor* t, TypeInfo* info, TypeDescriptor* parent, bool init );
 
 bool inherits_from(TypeDescriptor* t1, TypeDescriptor* t2);

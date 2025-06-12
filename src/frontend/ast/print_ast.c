@@ -125,7 +125,7 @@ void print_binary_operation_node(BinaryOperationNode *node, int indent) {
 void print_expression_block_node(ExpressionBlockNode *node, int indent) {
     // Imprime un nodo de bloque de expresiones [para DEBUG]
     if (!node) return;
-
+    
     print_indent(indent);
 
     printf("Expression Block(%d expressions):\n", node->expression_count);
@@ -342,7 +342,7 @@ void print_type_definition_node(TypeDefinitionNode* node, int indent) {
 
     print_indent(indent + 1);
     printf("Body:\n");
-    print_ast_node(node->body, indent + 2);
+    print_expression_block_node(node->body, indent + 2);
 }
 
 void print_type_definition_list_node(TypeDefinitionListNode* node, int indent) {

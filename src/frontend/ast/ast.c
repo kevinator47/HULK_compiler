@@ -277,7 +277,7 @@ ASTNode* create_type_definition_node(char* type_name, char** param_names, char**
     node->base.accept = generic_ast_accept;
 
     node->type_name = strdup(type_name);
-    node->body = body;
+    node->body = (ExpressionBlockNode*)body;
     node->scope = NULL;
 
     node->param_count = param_count;
@@ -313,13 +313,11 @@ ASTNode* create_type_definition_node(char* type_name, char** param_names, char**
             node->parent_args[i] = parent_args[i];
         }
     }
-
-    register_user_defined_type(table, type_name, parent_name);
-    
+    register_user_defined_type(table, type_name, parent_name);    
     return (ASTNode*)node;
 }
 
-ASTNode* create_type_definition_list_node(ASTNode** list, int count, TypeTable* table) {
+ASTNode* create_type_definition_list_node(TypeDefinitionNode** list, int count, TypeTable* table) {
     TypeDefinitionListNode* node = malloc(sizeof(TypeDefinitionListNode));
     if (!node) return NULL;
 
@@ -328,10 +326,12 @@ ASTNode* create_type_definition_list_node(ASTNode** list, int count, TypeTable* 
     node->base.accept = generic_ast_accept;
 
     node->count = count;
-    for (int i = 0; i < count; i++)
-    {
-        node->definitions[i] = (TypeDefinitionNode*) list[i];
+    node->definitions = malloc(sizeof(TypeDefinitionNode*) * count);
+
+    for (int i = 0; i < count; i++) {
+        node->definitions[i] = list[i];
     }
+
     return (ASTNode*) node;
 }
 

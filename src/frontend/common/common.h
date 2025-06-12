@@ -23,7 +23,8 @@ typedef enum {
     SYMBOL_VARIABLE,
     SYMBOL_FUNCTION,
     SYMBOL_PARAMETER,
-    SYMBOL_BUILTIN
+    SYMBOL_TYPE_FIELD,
+    SYMBOL_TYPE_METHOD
 } SymbolKind;
 
 extern const char *Hulk_Op_Names[] ;

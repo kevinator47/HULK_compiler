@@ -176,9 +176,6 @@ void free_variable_assigment_node(VariableAssigmentNode* node) {
     if (node->assigment) 
     {
         free(node->assigment->name);
-
-        if (node->assigment->static_type) 
-            free(node->assigment->static_type);
         
         free_ast_node(node->assigment->value);
         
@@ -279,7 +276,7 @@ void free_type_definition_node(TypeDefinitionNode* node) {
     free(node->type_name);
     free(node->parent_name);
 
-    free_ast_node(node->body);
+    free_expression_block_node(node->body);
     free(node);
 }
 

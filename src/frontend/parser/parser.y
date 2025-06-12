@@ -31,6 +31,7 @@ TypeTable *type_table;
     struct { char* name; char** param_names; char** param_types; int param_count;  
              char* parent_name; struct ASTNode** parent_args; int parent_args_count;} type_def_header;
     struct { char* name; struct ASTNode** nodes; int count ;} inherit_info;
+    struct { TypeDefinitionNode** nodes; int count;} type_def_list;
     
 }
 
@@ -47,7 +48,8 @@ TypeTable *type_table;
 
 %type<node> Expression ExprBlock OrExpr AndExpr CompExpr AddExpr MultExpr PowExpr T WhileLoopExpr LetInExpr
 %type<node> IfExpr Else_Elif_Branch FunctionDefList FunctionDefinition FunctionBody TypeDefinition TypeDefinitionBody TypeDefExpr
-%type<node_list> ExpressionList OptionalExpressionList ArgList OptionalArgList OptionalParentArgs TypeExprList TypeDefinitionList
+%type<node_list> ExpressionList OptionalExpressionList ArgList OptionalArgList OptionalParentArgs TypeExprList 
+%type<type_def_list> TypeDefinitionList
 %type<var_assig> VariableAssigment
 %type<var_assig_list> VariableAssigmentList
 %type<function_header> FunctionHeader
@@ -108,7 +110,7 @@ FunctionHeader          :  ID LPAREN ParameterList RPAREN OptionalType
                         }
                         ;
 
-OptionalType            : /* empty */                       {$$ = "Undefined";}
+OptionalType            : /* empty */                       {$$ = strdup("Undefined");}
                         | COLON ID                          {$$ = $2;}
                         ;
 
@@ -144,21 +146,26 @@ FunctionBody            : ARROW Expression SEMICOLON         { $$ = $2;}
                         | ExprBlock OptionalEnd              { $$ = $1; }
                         ;
 
-TypeDefinitionList      : /* empty */                        { $$.nodes = NULL; $$.count = 0; }
+TypeDefinitionList      : /* empty */
+                        {
+                            $$.nodes = NULL;
+                            $$.count = 0;
+                        }
                         | TypeDefinition TypeDefinitionList
                         {
                             int new_count = $2.count + 1;
-                            ASTNode** nodes = realloc($2.nodes, new_count * sizeof(ASTNode*));
+                            TypeDefinitionNode** nodes = realloc($2.nodes, new_count * sizeof(TypeDefinitionNode*));
                             if (!nodes) DIE("Out of memory in TypeDefinitionList");
-                            nodes[new_count - 1] = $1;
+
+                            nodes[new_count - 1] = (TypeDefinitionNode*)$1;
                             $$.nodes = nodes;
                             $$.count = new_count;
-                        }                        
+                        }
                         ;
 
 TypeDefinition          : TypeDefinitionHeader TypeDefinitionBody
                         {
-                            create_type_definition_node($1.name, $1.param_names, $1.param_types, $1.param_count, $1.parent_name, 
+                            $$ = create_type_definition_node($1.name, $1.param_names, $1.param_types, $1.param_count, $1.parent_name, 
                             $1.parent_args, $1.parent_args_count, $2, type_table);
                         }
                         ;
@@ -188,7 +195,7 @@ OptionalParentArgs      : /*empty*/                      {$$.nodes = NULL; $$.co
 
 TypeDefinitionBody      : LBRACKET TypeExprList RBRACKET
                         {
-                            create_expression_block_node($2.nodes, $2.count, type_table);
+                            $$ = create_expression_block_node($2.nodes, $2.count, type_table);
                         }
 
 TypeExprList            : /* empty */                    { $$.nodes = NULL; $$.count = 0; }

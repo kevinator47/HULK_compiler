@@ -55,7 +55,6 @@ void register_user_defined_type(TypeTable* table, const char* type_name , const 
         A = create_user_defined_type(type_name, NULL, B, true);
         add_type(table, A);
     }   
-    
 }
 
 TypeDescriptor* type_table_lookup(TypeTable *table, const char *name) {

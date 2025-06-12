@@ -31,12 +31,13 @@ struct LLVMCodeGenerator {
     LLVMValueRef (*visit_Conditional)(LLVMCodeGenerator* self, ConditionalNode* node);
     LLVMValueRef (*visit_FunctionDefinition)(LLVMCodeGenerator* self, FunctionDefinitionNode* node);
     LLVMValueRef (*visit_FunctionCall)(LLVMCodeGenerator* self, FunctionCallNode* node);
-    LLVMValueRef (*declare_FunctionHeaders_impl)(LLVMCodeGenerator* self, FunctionDefinitionNode* node);
-    LLVMValueRef (*define_FunctionBodies_impl)(LLVMCodeGenerator* self, FunctionDefinitionNode* node);
+    void (*declare_FunctionHeaders_impl)(LLVMCodeGenerator* self, FunctionDefinitionListNode* node);
+    void (*define_FunctionBodies_impl)(LLVMCodeGenerator* self, FunctionDefinitionListNode* node);
 };
 
 LLVMCodeGenerator* create_llvm_code_generator(const char* module_name, TypeTable* type_table);
 void destroy_llvm_code_generator(LLVMCodeGenerator* generator);
 LLVMModuleRef generate_code(ProgramNode* program, LLVMCodeGenerator* generator);
+void declare_external_functions(LLVMModuleRef module, LLVMContextRef context);
 
 #endif // LLVM_CODEGEN_H

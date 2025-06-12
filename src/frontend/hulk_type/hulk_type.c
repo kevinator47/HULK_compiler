@@ -12,6 +12,7 @@ TypeDescriptor* create_builtin_type(HULK_Type tag, const char *type_name, TypeDe
     type->info = NULL;      
     type->parent = parent;
     type->initializated = true;
+    type->llvm_type = NULL;
     return type;
 }
 

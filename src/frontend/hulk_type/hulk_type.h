@@ -1,6 +1,7 @@
 #ifndef HULK_TYPE_H
 #define HULK_TYPE_H
 
+#include <llvm-c/Core.h>
 #include "../ast/ast.h"
 #include "../common/common.h"
 
@@ -17,6 +18,8 @@ typedef struct TypeDescriptor {
     TypeInfo* info;                 // NULL para tipos primitivos, apunta a la información del tipo para tipos definidos por el usuario.
     struct TypeDescriptor* parent;  // Tipo padre, Object por defecto
     bool initializated;             // Especifica si el tipo ya ha sido inicializado(para tipos del usuario)
+
+    LLVMTypeRef llvm_type; // Referencia al tipo de dato en LLVM, NULL si no se ha generado
 } TypeDescriptor;
 
 typedef struct TypeInfo {

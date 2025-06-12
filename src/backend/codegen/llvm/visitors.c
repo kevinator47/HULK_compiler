@@ -326,7 +326,13 @@ LLVMValueRef visit_ReassignNode_impl(LLVMCodeGenerator* self, ReassignNode* node
 LLVMValueRef visit_FunctionDefinition_impl(LLVMCodeGenerator* self, FunctionDefinitionNode* node) {
     LLVMTypeRef* param_types = malloc(node->param_count * sizeof(LLVMTypeRef));
     for (int i = 0; i < node->param_count; ++i) {
-        param_types[i] = get_llvm_type_from_descriptor(node->scope->symbols[i]->type, self->context);
+        Symbol* param_symbol = lookup_symbol(node->scope, node->params[i]->name, true);
+        if (!param_symbol) {
+            fprintf(stderr, "Error: Símbolo de parámetro '%s' no encontrado en el scope de la función '%s'.\n", node->params[i]->name, node->name);
+            free(param_types);
+            return NULL;
+        }
+        param_types[i] = get_llvm_type_from_descriptor(param_symbol->type, self);
     }
 
     LLVMTypeRef ret_type = LLVMDoubleTypeInContext(self->context); //tipo correcto
@@ -398,7 +404,7 @@ LLVMValueRef visit_FunctionDefinition_impl(LLVMCodeGenerator* self, FunctionDefi
 void declare_FunctionHeaders_impl(LLVMCodeGenerator* self, FunctionDefinitionListNode* node) {
     for (int i = 0; i < node->function_count; i++) {
         FunctionDefinitionNode* fn_node = node->functions[i];
-        Symbol* function_symbol = lookup_function_by_signature(fn_node->scope, fn_node->name, fn_node->param_count);
+        Symbol* function_symbol = lookup_symbol(fn_node->scope, fn_node->name, true);
         if(fn_node == NULL) {
             fprintf(stderr, "Error: Nodo de función nulo en declare_FunctionHeaders_impl.\n");
             continue;
@@ -409,7 +415,14 @@ void declare_FunctionHeaders_impl(LLVMCodeGenerator* self, FunctionDefinitionLis
         }
         LLVMTypeRef* param_types = malloc(fn_node->param_count * sizeof(LLVMTypeRef));
         for (int j = 0; j < fn_node->param_count; ++j) {
-            param_types[j] = get_llvm_type_from_descriptor(fn_node->scope->symbols[j]->type, self->context);
+            Symbol* param_symbol = lookup_symbol(fn_node->scope, fn_node->params[j]->name, true);
+            if (param_symbol == NULL) {
+                fprintf(stderr, "Error: Símbolo de parámetro '%s' no encontrado en el scope de la función '%s'.\n", fn_node->params[j]->name, fn_node->name);
+                free(param_types);
+                return;
+            }
+            printf("param_symbol->type ptr: %p\n", (void*)param_symbol->type);
+            param_types[j] = get_llvm_type_from_descriptor(param_symbol->type, self);
         }
         if(fn_node->static_return_type == NULL) {
             fprintf(stderr, "Error: Tipo de retorno estático nulo para la función '%s'.\n", fn_node->name);
@@ -422,8 +435,13 @@ void declare_FunctionHeaders_impl(LLVMCodeGenerator* self, FunctionDefinitionLis
             return;
         }
         printf("La funcion devuelve: %s\n", function_symbol->type->type_name);
-        printf("El tipo de retorno de la función %s es %s\n", fn_node->name, fn_node->static_return_type);
-        LLVMTypeRef ret_type = get_llvm_type_from_descriptor(function_symbol->type, self->context); // O el tipo correcto
+        printf("El tipo de retorno de la función %s es %s\n", fn_node->name, function_symbol->type->type_name);
+        LLVMTypeRef ret_type = get_llvm_type_from_descriptor(function_symbol->type, self);
+        if (!ret_type) {
+            fprintf(stderr, "Error: ret_type es NULL para la función '%s'.\n", fn_node->name);
+            free(param_types);
+            return;
+        }
         LLVMTypeRef fn_type = LLVMFunctionType(ret_type, param_types, fn_node->param_count, 0);
         LLVMAddFunction(self->module, fn_node->name, fn_type);
         free(param_types);

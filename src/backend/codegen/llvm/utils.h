@@ -4,6 +4,7 @@
 
 #include <llvm-c/Core.h>
 #include "../../../frontend/ast/ast.h"
+#include "generator.h"
 
 typedef enum {
     BUILTIN_NONE,
@@ -18,7 +19,7 @@ typedef enum {
     BUILTIN_RAND
 } BuiltinKind;
 
-LLVMTypeRef get_llvm_type_from_descriptor(TypeDescriptor* desc, LLVMContextRef context); 
+LLVMTypeRef get_llvm_type_from_descriptor(TypeDescriptor* desc, LLVMCodeGenerator* generator); 
 BuiltinKind get_builtin_kind(const char* name);
 const char* get_print_format(LLVMTypeRef type, LLVMContextRef context);
 

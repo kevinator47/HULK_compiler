@@ -40,6 +40,10 @@ void print_ast_node(ASTNode *node, int indent) {
             print_variable_node((VariableNode*) node, indent);
             break;
         }
+        case AST_Node_Variable_Assigment: {
+            print_variable_assigment_node((VariableAssigmentNode*)node, indent);
+            break;
+        }
         case AST_Node_Reassign: {
             print_reassign_node((ReassignNode*) node, indent);
             break;
@@ -56,6 +60,14 @@ void print_ast_node(ASTNode *node, int indent) {
             print_function_call_node((FunctionCallNode*) node , indent);
             break;
         }
+        case AST_Node_Type_Definition: {
+            print_type_definition_node((TypeDefinitionNode*)node, indent);
+            break;
+        }
+        case AST_Node_Type_Definition_List: {
+            print_type_definition_list_node((TypeDefinitionListNode*)node, indent);
+            break;
+        }
         case AST_Node_Program: {
             print_program_node((ProgramNode*) node, indent);
             break;
@@ -66,37 +78,41 @@ void print_ast_node(ASTNode *node, int indent) {
     }
 }
 
-void print_literal_node(LiteralNode *node, int indent) {
-    if (!node) return;
+void print_literal_node(LiteralNode* node, int indent) {
+    // Imprime un nodo literal [para DEBUG]
+    if(!node) return;
 
     print_indent(indent);
-
+    printf("LiteralNode(");
+    
     switch (node->base.return_type->tag) {
         case HULK_Type_Number:
-            printf("%f\n", node->value.number_value);
+            printf("Number: %f", node->value.number_value);
             break;
         case HULK_Type_String:
-            printf("%s\n", node->value.string_value);
+            printf("String: \"%s\"", node->value.string_value);
             break;
         case HULK_Type_Boolean:
-            printf("%s\n", node->value.bool_value ? "true" : "false");
+            printf("Bool: %s", node->value.bool_value ? "true" : "false");
             break;
         default:
-            printf("Unknown Literal Type\n");
+            printf("Unknown type");
             break;
     }
+    printf(")\n");
 }
 
 void print_unary_operation_node(UnaryOperationNode *node, int indent) {
+    // Imprime un nodo de operacion unaria [para DEBUG]
     if (!node) return;
 
     print_indent(indent);
-
     printf("%s:\n", Hulk_Op_Names[node->operator]);
     print_ast_node(node->operand, indent + 1);
 }
 
 void print_binary_operation_node(BinaryOperationNode *node, int indent) {
+    // Imprime un nodo de operacion binaria [para DEBUG]
     if (!node) return;
 
     print_indent(indent);
@@ -107,152 +123,172 @@ void print_binary_operation_node(BinaryOperationNode *node, int indent) {
 }
 
 void print_expression_block_node(ExpressionBlockNode *node, int indent) {
+    // Imprime un nodo de bloque de expresiones [para DEBUG]
     if (!node) return;
 
     print_indent(indent);
 
-    printf("Expression Block:\n");
+    printf("Expression Block(%d expressions):\n", node->expression_count);
     for (int i = 0; i < node->expression_count; i++) {
-        print_ast_node(node->expressions[i], indent);
+        print_ast_node(node->expressions[i], indent + 1);
     }
 }
 
-void print_conditional_node(ConditionalNode *node, int indent) {
-    if (!node) return;
+void print_conditional_node(ConditionalNode* node, int indent) {
+    // Imprime un nodo de expresion condicional [para DEBUG]
+    if(!node) return;
 
     print_indent(indent);
+    printf("ConditionalNode:\n");
 
-    printf("IF:\n");
-    print_ast_node(node->condition, indent + 1);
+    print_indent(indent + 1);
+    printf("Condition:\n");
+    print_ast_node(node->condition, indent + 2);
 
-    print_indent(indent);
-    
-    printf("THEN: \n");
-    print_ast_node(node->then_branch, indent + 1);
-    
+    print_indent(indent + 1);
+    printf("Then branch:\n");
+    print_ast_node(node->then_branch, indent + 2);
+
     if (node->else_branch) {
-
-        print_indent(indent);
-        
-        printf("ELSE:\n");
-        print_ast_node(node->else_branch, indent + 1);
-    }
-}
-
-void print_while_loop_node(WhileLoopNode *node, int indent) {
-    if (!node) return;
-
-    print_indent(indent);
-
-    printf("WHILE:\n");
-    print_ast_node(node->condition, indent + 1);
-    
-    print_indent(indent);
-    
-    printf("BODY:\n");
-    print_ast_node(node->body, indent + 1);
-}
-
-void print_let_in_node(LetInNode *node, int indent) {
-    if (!node) return;
-
-    print_indent(indent);
-    printf("LET:\n");
-
-    for (int i = 0; i < node->assigment_count; i++) {
-        VariableAssigment *assigment = node->assigments[i];
         print_indent(indent + 1);
-        printf("%s =\n", assigment->name);
-        print_ast_node(assigment->value, indent + 2);
-    }
-
-    print_indent(indent);
-    printf("IN:\n");
-    print_ast_node(node->body, indent + 1);
-}
-
-
-void print_variable_node(VariableNode *node, int indent) {
-    if (!node) return;
-
-    if (node->scope)
-    {
-        
-        Symbol *symbol = lookup_symbol(node->scope, node->name, true);
-        if (symbol) {
-            print_indent(indent);
-            printf("Variable: \n");
-            
-            print_indent(indent + 1);
-        
-            printf("Name: %s\n", node->name);
-
-            print_indent(indent + 1);
-
-            printf("Type: %s\n", symbol->type->type_name);
-
-            print_indent(indent + 1);
-
-            if(symbol->value) {
-                printf("Value: \n");
-                print_ast_node(symbol->value, indent + 2);
-            } else {
-                printf("Value: NULL\n");
-            }
-        }
-        else {
-            print_indent(indent);
-            printf("Variable: \n%s (not initialized)", node->name);
-        }
+        printf("Else branch:\n");
+        print_ast_node(node->else_branch, indent + 2);
+    } else {
+        print_indent(indent + 1);
+        printf("Else branch: NULL\n");
     }
 }
 
-void print_reassign_node(ReassignNode *node, int indent) {
-    if (!node) return;
+void print_while_loop_node(WhileLoopNode* node, int indent) {
+    // Imprime un nodo de expresion While [para DEBUG]
+    if(!node) return;
 
     print_indent(indent);
+    printf("WhileLoopNode:\n");
 
-    printf("REASSIGN:\n");
     print_indent(indent + 1);
+    printf("Condition:\n");
+    print_ast_node(node->condition, indent + 2);
+
+    print_indent(indent + 1);
+    printf("Body:\n");
+    print_ast_node(node->body, indent + 2);
+}
+
+void print_variable_assigment_node(VariableAssigmentNode* node, int indent) {
+    // Imprime un nodo de asignacion de variable [para DEBUG]
+    print_indent(indent);
+    printf("VariableAssigmentNode:\n");
+
+    print_indent(indent + 1);
+    printf("Name: %s\n", node->assigment->name);
+
+    print_indent(indent + 1);
+    printf("Static Type: %s\n", node->assigment->static_type);
     
+    print_indent(indent + 1);
+    printf("Value:\n");
+    print_ast_node(node->assigment->value, indent + 2);
+}
+
+void print_let_in_node(LetInNode* node, int indent) {
+    // Imprime un nodo Let In [para DEBUG]
+    if (!node) return;
+
+    print_indent(indent);
+    printf("LetInNode:\n");
+
+    for (int i = 0; i < node->assigment_count; ++i) {
+        print_indent(indent + 1);
+        printf("Assigment %d:\n", i + 1);
+
+        VariableAssigment* a = node->assigments[i];
+        print_indent(indent + 2);
+        printf("Name: %s\n", a->name);
+
+        print_indent(indent + 2);
+        printf("Static Type: %s\n", a->static_type);
+
+        print_indent(indent + 2);
+        printf("Value:\n");
+        print_ast_node(a->value, indent + 3);
+    }
+
+    print_indent(indent + 1);
+    printf("Body:\n");
+    print_ast_node(node->body, indent + 2);
+}
+
+
+void print_variable_node(VariableNode* node, int indent) {
+    // Imprime un nodo Variable [para DEBUG]
+    if (!node) return;
+
+    print_indent(indent);
+    printf("VariableNode:\n");
+
+    print_indent(indent + 1);
     printf("Name: %s\n", node->name);
-    
-    print_indent(indent + 1);
 
-    printf("Type: %s\n", lookup_symbol(node->scope, node->name, true)->type->type_name);
+    
+    if(node->scope)
+    {
+        Symbol* var_symbol = lookup_symbol(node->scope, node->name, true);
+        print_indent(indent + 1);
+        if (var_symbol->type)
+        {
+            printf("Type: %s\n", var_symbol->type->type_name);
+        }
+        else
+        {
+            printf("Type: (Variable not initialized)\n");
+        }
+    }
+}
+
+void print_reassign_node(ReassignNode* node, int indent) {
+    // Imprime un nodo de reasignacion [para DEBUG]
+    if (!node) return;
+
+    print_indent(indent);
+    printf("ReassignNode:\n");
 
     print_indent(indent + 1);
-    
+    printf("Name: %s\n", node->name);
+
+    print_indent(indent + 1);
     printf("Value:\n");
     print_ast_node(node->value, indent + 2);
 }
 
-void print_function_definition_node(FunctionDefinitionNode *node, int indent) {
+void print_function_definition_node(FunctionDefinitionNode* node, int indent) {
+    // Imprime un nodo de Definición de Función [para DEBUG]
     if (!node) return;
 
     print_indent(indent);
+    printf("FunctionDefinitionNode:\n");
 
-    printf("FUNCTION: %s\n", node->name);
-    
     print_indent(indent + 1);
-    
-    printf("Parameters: ");
-    for (int i = 0; i < node->param_count; i++) {
-        if( i == node->param_count - 1)
-            printf("%s \n", node->params[i]->name);
-        else
-        {
-            printf("%s, ", node->params[i]->name);
-        }        
+    printf("Name: %s\n", node->name);
+
+    print_indent(indent + 1);
+    printf("Parameters (%d):\n", node->param_count);
+    for (int i = 0; i < node->param_count; ++i) {
+        Param* p = node->params[i];
+        print_indent(indent + 2);
+        printf("Param %d - Name: %s, Type: %s\n", i + 1, p->name, p->static_type);
     }
 
     print_indent(indent + 1);
-    
+    printf("Static return type: %s\n", node->static_return_type);
+
+    print_indent(indent + 1);
     printf("Body:\n");
-    print_ast_node(node->body, indent + 1);
+    print_ast_node(node->body, indent + 2);
 }
 
 void print_function_definition_list_node(FunctionDefinitionListNode *node, int indent) {
+    // Imprime un nodo de Lista de Definiciones de Funciones [para DEBUG]
     if (!node) return;
 
     for (int i = 0; i < node->function_count; i++) {
@@ -261,6 +297,7 @@ void print_function_definition_list_node(FunctionDefinitionListNode *node, int i
 }
 
 void print_function_call_node(FunctionCallNode* node, int indent) {
+    // Imprime un nodo de Llamado de Función [para DEBUG]
     if (!node) return;
 
     print_indent(indent);
@@ -270,28 +307,70 @@ void print_function_call_node(FunctionCallNode* node, int indent) {
     printf("Return type: %s\n",node->base.return_type->type_name);
 
     print_indent(indent);
-    printf("Argument count: %d\n", node->arg_count);
+    printf("Arguments (%d) :\n", node->arg_count);
 
     for (int i = 0; i < node->arg_count; i++) {
-        print_ast_node(node->args[i], indent);
+        print_ast_node(node->args[i], indent + 1);
     }
 }
 
-void print_program_node(ProgramNode *node, int indent) {
+void print_type_definition_node(TypeDefinitionNode* node, int indent) {
+    // Imprime un nodo de Definición de Tipo [para DEBUG]
     if (!node) return;
 
     print_indent(indent);
+    printf("TypeDefinitionNode: %s\n", node->type_name);
 
-    printf("PROGRAM:\n");
-    
     print_indent(indent + 1);
+    printf("Parameters (count = %d):\n", node->param_count);
     
+    for (int i = 0; i < node->param_count; i++) 
+    {
+        print_indent(indent + 2);
+        printf("Param %d: name = %s, type = %s\n", i, node->params[i]->name, node->params[i]->static_type);
+    }
+
+    print_indent(indent + 1);
+    printf("Parent Name: %s\n", node->parent_name);
+
+    print_indent(indent + 1);
+    printf("Parent Arguments (count = %d):\n", node->parent_arg_count);
+    for (int i = 0; i < node->parent_arg_count; i++) 
+    {
+        print_ast_node(node->parent_args[i], indent + 2);
+    }
+
+    print_indent(indent + 1);
+    printf("Body:\n");
+    print_ast_node(node->body, indent + 2);
+}
+
+void print_type_definition_list_node(TypeDefinitionListNode* node, int indent) {
+    // Imprime un nodo de Lista Definiciones de Tipos [para DEBUG]
+    if (!node) return;
+
+    for (int i = 0; i < node->count; i++) {
+        print_type_definition_node(node->definitions[i], indent);
+    }
+}
+
+void print_program_node(ProgramNode* node, int indent) {
+    // Imprime un nodo Programa [para DEBUG]
+    if (!node) return;
+
+    print_indent(indent);
+    printf("ProgramNode:\n");
+
+    print_indent(indent + 1);
     printf("Function Definitions:\n");
     print_function_definition_list_node(node->function_list, indent + 2);
-    
+
     print_indent(indent + 1);
-    
-    printf("Code:\n");
+    printf("Type Definitions:\n");
+    print_type_definition_list_node(node->type_definitions, indent + 2);
+
+    print_indent(indent + 1);
+    printf("Root Expression:\n");
     print_ast_node(node->root, indent + 2);
 }
 

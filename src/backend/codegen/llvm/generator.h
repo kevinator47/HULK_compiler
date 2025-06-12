@@ -17,11 +17,13 @@ struct LLVMCodeGenerator {
     LLVMModuleRef module;
     LLVMBuilderRef builder;
     ScopeStack* scope_stack; 
+    TypeTable* type_table; // Tabla de tipos para resolver tipos de nodos AST
 
     // Punteros a las implementaciones de visit_ para CADA tipo de nodo AST
     LLVMValueRef (*visit_Literal)(LLVMCodeGenerator* self, LiteralNode* node);
     LLVMValueRef (*visit_UnaryOp)(LLVMCodeGenerator* self, UnaryOperationNode* node);
     LLVMValueRef (*visit_BinaryOp)(LLVMCodeGenerator* self, BinaryOperationNode* node);
+    LLVMValueRef (*visit_WhileLoop)(LLVMCodeGenerator* self, WhileLoopNode* node);
     LLVMValueRef (*visit_ExpressionBlock)(LLVMCodeGenerator* self, ExpressionBlockNode* node);
     LLVMValueRef (*visit_Let)(LLVMCodeGenerator* self, LetInNode* node);
     LLVMValueRef (*visit_Variable)(LLVMCodeGenerator* self, VariableNode* node);
@@ -33,7 +35,7 @@ struct LLVMCodeGenerator {
     LLVMValueRef (*define_FunctionBodies_impl)(LLVMCodeGenerator* self, FunctionDefinitionNode* node);
 };
 
-LLVMCodeGenerator* create_llvm_code_generator(const char* module_name);
+LLVMCodeGenerator* create_llvm_code_generator(const char* module_name, TypeTable* type_table);
 void destroy_llvm_code_generator(LLVMCodeGenerator* generator);
 LLVMModuleRef generate_code(ProgramNode* program, LLVMCodeGenerator* generator);
 

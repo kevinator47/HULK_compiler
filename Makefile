@@ -97,3 +97,24 @@ llvm: $(BIN)
 	@echo "=== Código LLVM generado en output.ll ==="
 	@cat output.ll
 
+llvm_test: $(BIN)
+	@echo "=== Ejecutando tests LLVM en la carpeta test ==="
+	@find test -name '*.hulk' | while read testfile; do \
+	    testdir=$$(dirname $$testfile); \
+	    testbase=$$(basename $$testfile .hulk); \
+	    echo "Compilando $$testfile ..."; \
+	    ./$(BIN) $$testfile > /dev/null 2>&1; \
+	    if [ -f output.ll ]; then \
+	        mv output.ll "$$testdir/$$testbase.ll"; \
+	        echo "  [OK] Generado $$testdir/$$testbase.ll"; \
+	    else \
+	        echo "  [FAIL] No se generó output.ll para $$testfile"; \
+	        exit 1; \
+	    fi \
+	done
+	@echo "=== Fin de tests LLVM ==="
+
+clean_tests:
+	@echo "Eliminando archivos .ll generados en los tests..."
+	@find test -name '*.ll' -delete
+	@echo "Limpieza de tests completada."

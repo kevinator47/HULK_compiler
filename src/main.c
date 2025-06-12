@@ -72,11 +72,11 @@ int main(int argc, char **argv) {
     semantic_visit(visitor,root_node, global_scope);
 
     printf("Chequeo semántico completado.\n");
-    print_ast_node(root_node, 0); // Imprimir el AST para depuración
+    //print_ast_node(root_node, 0); // Imprimir el AST para depuración
 
     // 6. Generación de código LLVM
     const char* module_name = "hulk_module";
-    LLVMCodeGenerator* generator = create_llvm_code_generator("hulk_module");
+    LLVMCodeGenerator* generator = create_llvm_code_generator("hulk_module", type_table);
     LLVMModuleRef module = generate_code((ProgramNode*)root_node, generator);
 
     // 7. Imprimir a archivo

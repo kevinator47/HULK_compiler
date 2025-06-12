@@ -52,7 +52,15 @@ LLVMValueRef visit_UnaryOp_impl(LLVMCodeGenerator* self, UnaryOperationNode* nod
 }
 
 LLVMValueRef visit_BinaryOp_impl(LLVMCodeGenerator* self, BinaryOperationNode* node) {
-    printf("[visit_BinaryOp_impl] Operación: %d\n", node->operator);
+    printf("[visit_BinaryOp_impl] node: %p\n", (void*)node);
+    printf("[visit_BinaryOp_impl] node->operator: %d\n", node->operator);
+    printf("[visit_BinaryOp_impl] node->left: %p\n", (void*)node->left);
+    printf("[visit_BinaryOp_impl] node->right: %p\n", (void*)node->right);
+    if (!node->left || !node->left->accept) {
+    fprintf(stderr, "Error: Nodo izquierdo o su método accept es NULL en BinaryOp.\n");
+    fprintf(stderr, "Tipo de nodo izquierdo: %d\n", node->left ? node->left->type : -1);
+    abort();
+    }
     LLVMValueRef left_val = node->left->accept(node->left, self);
     LLVMValueRef right_val = node->right->accept(node->right, self);
 
@@ -226,6 +234,38 @@ LLVMValueRef visit_Let_impl(LLVMCodeGenerator* self, LetInNode* node){
     LLVMValueRef body_value = node->body->accept(node->body, self);
     pop_scope(self->scope_stack);
     return body_value;
+}
+
+LLVMValueRef visit_WhileLoop_impl(LLVMCodeGenerator* self, WhileLoopNode* node) {
+    LLVMValueRef function = LLVMGetBasicBlockParent(LLVMGetInsertBlock(self->builder));
+    LLVMBasicBlockRef cond_bb = LLVMAppendBasicBlockInContext(self->context, function, "while.cond");
+    LLVMBasicBlockRef body_bb = LLVMAppendBasicBlockInContext(self->context, function, "while.body");
+    LLVMBasicBlockRef after_bb = LLVMAppendBasicBlockInContext(self->context, function, "while.after");
+
+    // Salto a la condición
+    LLVMBuildBr(self->builder, cond_bb);
+
+    // Condición
+    LLVMPositionBuilderAtEnd(self->builder, cond_bb);
+    LLVMValueRef cond_val = node->condition->accept(node->condition, self);
+    if (LLVMGetTypeKind(LLVMTypeOf(cond_val)) == LLVMDoubleTypeKind) {
+        cond_val = LLVMBuildFCmp(
+            self->builder, LLVMRealONE, cond_val,
+            LLVMConstReal(LLVMDoubleTypeInContext(self->context), 0.0),
+            "whilecond"
+        );
+    }
+    LLVMBuildCondBr(self->builder, cond_val, body_bb, after_bb);
+
+    // Cuerpo del while
+    LLVMPositionBuilderAtEnd(self->builder, body_bb);
+    LLVMValueRef body_val = node->body->accept(node->body, self);
+    LLVMBuildBr(self->builder, cond_bb);
+
+    // Después del while
+    LLVMPositionBuilderAtEnd(self->builder, after_bb);
+
+    return LLVMConstNull(LLVMDoubleTypeInContext(self->context)); // O el valor que quieras retornar
 }
 
 LLVMValueRef visit_ExpressionBlock_impl(LLVMCodeGenerator* self, ExpressionBlockNode* node) {

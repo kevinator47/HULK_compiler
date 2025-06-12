@@ -12,6 +12,7 @@ LLVMValueRef visit_Let_impl(LLVMCodeGenerator* self, LetInNode* node);
 LLVMValueRef visit_Variable_impl(LLVMCodeGenerator* self, VariableNode* node);
 LLVMValueRef visit_ReassignNode_impl(LLVMCodeGenerator* self, ReassignNode* node);
 LLVMValueRef visit_Conditional_impl(LLVMCodeGenerator* self, ConditionalNode* node);
+LLVMValueRef visit_WhileLoop_impl(LLVMCodeGenerator* self, WhileLoopNode* node);
 LLVMValueRef visit_ExpressionBlock_impl(LLVMCodeGenerator* self, ExpressionBlockNode* node);
 void define_FunctionBodies_impl(LLVMCodeGenerator* self, FunctionDefinitionListNode* node);
 void declare_FunctionHeaders_impl(LLVMCodeGenerator* self, FunctionDefinitionListNode* node);

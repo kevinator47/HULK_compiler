@@ -7,7 +7,7 @@ LLVMValueRef generic_ast_accept(struct ASTNode* self, struct LLVMCodeGenerator* 
         fprintf(stderr, "Error critico: ASTNode o Visitor nulo en accept.\n");
         return NULL;
     }
-
+    printf("[generic_ast_accept] self->type: %d\n", self->type);
     // Usamos el campo 'type' para saber que tipo de nodo concreto es 'self'
     // y llamar al metodo 'visit_' correspondiente del visitor.
     switch (self->type) {
@@ -25,6 +25,11 @@ LLVMValueRef generic_ast_accept(struct ASTNode* self, struct LLVMCodeGenerator* 
         case AST_Node_Binary_Operation:
              if (visitor->visit_BinaryOp)
                 return visitor->visit_BinaryOp(visitor, (BinaryOperationNode*)self);
+            break;
+
+        case AST_Node_While_Loop:
+             if (visitor->visit_WhileLoop)
+                return visitor->visit_WhileLoop(visitor, (WhileLoopNode*)self);
             break;
 
         case AST_Node_Expression_Block:

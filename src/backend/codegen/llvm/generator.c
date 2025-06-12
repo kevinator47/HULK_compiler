@@ -8,7 +8,7 @@
 #include <string.h>
 
 // --- Funciones de inicialización y limpieza del generador de código ---
-LLVMCodeGenerator* create_llvm_code_generator(const char* module_name) {
+LLVMCodeGenerator* create_llvm_code_generator(const char* module_name, TypeTable* type_table) {
     LLVMCodeGenerator* generator = (LLVMCodeGenerator*)malloc(sizeof(LLVMCodeGenerator));
     if (!generator) {
         perror("Failed to allocate LLVMCodeGenerator");
@@ -19,6 +19,7 @@ LLVMCodeGenerator* create_llvm_code_generator(const char* module_name) {
     generator->context = LLVMContextCreate();
     generator->module = LLVMModuleCreateWithNameInContext(module_name, generator->context);
     generator->builder = LLVMCreateBuilderInContext(generator->context);
+    generator->type_table = type_table;
     
     // Inicializar el stack de ambitos
     generator->scope_stack = create_scope_stack();
@@ -35,6 +36,7 @@ LLVMCodeGenerator* create_llvm_code_generator(const char* module_name) {
     generator->visit_Let = visit_Let_impl;
     generator->visit_Variable = visit_Variable_impl;
     generator->visit_Conditional = visit_Conditional_impl;
+    generator->visit_WhileLoop = visit_WhileLoop_impl;
     generator->visit_ExpressionBlock = visit_ExpressionBlock_impl;
     generator->visit_FunctionDefinition = visit_FunctionDefinition_impl;
     generator->visit_FunctionCall = visit_FunctionCall_impl;

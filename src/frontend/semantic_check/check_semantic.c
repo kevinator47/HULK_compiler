@@ -280,8 +280,3 @@ void register_function_definition(FunctionDefinitionNode* node, SymbolTable* sco
     // Insertar el símbolo en el scope
     insert_symbol(scope, symbol);
 }
-
-TypeDescriptor* check_semantic_type_definition_node(TypeDefinitionNode* node, SymbolTable* current_scope, TypeTable* table)
-{
-    
-}

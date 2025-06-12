@@ -2,11 +2,9 @@
 
 TypeDescriptor* create_builtin_type(HULK_Type tag, const char *type_name, TypeDescriptor* parent) {
     // Crea un tipo de dato primitivo del lenguaje HULK.
-    
     TypeDescriptor *type = malloc(sizeof(TypeDescriptor));
-    if (!type) {
-        return NULL; 
-    }
+    if (!type) return NULL; 
+    
     type->type_name = strdup(type_name);
     type->tag = tag;
     type->info = NULL;      
@@ -17,11 +15,11 @@ TypeDescriptor* create_builtin_type(HULK_Type tag, const char *type_name, TypeDe
 }
 
 TypeDescriptor* create_user_defined_type(const char *name, TypeInfo* info, TypeDescriptor* parent, bool init) {
-    // Crea un tipo de dato definido por el usuario en el lenguaje Hulk.
+    // Crea un tipo de dato definido por el usuario en el lenguaje HULK.
     TypeDescriptor *type = malloc(sizeof(TypeDescriptor));
-    if (!type) {
+    if (!type)
         return NULL; // Error al asignar memoria
-    }
+    
     type->type_name = strdup(name);
     type->tag = HULK_Type_UserDefined;
     type->info = info;
@@ -30,7 +28,15 @@ TypeDescriptor* create_user_defined_type(const char *name, TypeInfo* info, TypeD
     return type;
 }
 
+void modify_type(TypeDescriptor* t, TypeInfo* info, TypeDescriptor* parent, bool init ) {
+    // Modifica los valores de un tipo
+    t->info = info;
+    t->parent = parent;
+    t->initializated = init;
+}
+
 bool inherits_from(TypeDescriptor* t1, TypeDescriptor* t2) {
+    // Retorna true si t1 hereda de t2
     if (!t1 || !t2 || t1 == t2) return false;
 
     TypeDescriptor* current = t1->parent;
@@ -43,11 +49,13 @@ bool inherits_from(TypeDescriptor* t1, TypeDescriptor* t2) {
 }
 
 bool conforms(TypeDescriptor* t1, TypeDescriptor* t2) {
+    // Retorna true si t1 conforma t2
     if (!t1 || !t2) return false;
     return cmp_type(t1, t2) || inherits_from(t1, t2);
 }
 
 bool cmp_type(TypeDescriptor* t1, TypeDescriptor* t2) {
+    // Retorna true si t1 y t2 son iguales
     if (t1 == NULL || t2 == NULL) return false;
 
     if (t1->tag == HULK_Type_UserDefined && t2->tag == HULK_Type_UserDefined) {

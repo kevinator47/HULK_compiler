@@ -19,6 +19,45 @@ void add_type(TypeTable *table, TypeDescriptor *type) {
     table->types[table->count++] = type;
 }
 
+void register_user_defined_type(TypeTable* table, const char* type_name , const char* parent_name) {
+    // Este algoritmo permite insertar un nodo A que hereda de un nodo B chequeando que no se produzca una dependencia circula
+    TypeDescriptor* A = type_table_lookup(table, type_name);
+    TypeDescriptor* B = type_table_lookup(table, parent_name);
+
+    TypeDescriptor* object_type = type_table_lookup(table, "Object");
+
+    if(!B) 
+    {
+        /* Si B no se encuentra en la tabla (crear una entrada "falsa" de B heredando de Object)
+        B se insertará realmente cuando se encuentre su definición   */
+        B = create_user_defined_type(parent_name, NULL, object_type, false );
+        add_type(table, B);
+    }
+
+    // [Dependencia Circular]  A -> ... B -> ... -> A
+    if(inherits_from(B,A))
+    {
+        fprintf(stderr, "Error: Detected circular hierachy dependency between types \"%s\" and \"%s\" \n", type_name, parent_name);
+        exit(1);
+    }
+
+    if(A)   // si A se encuentra en la tabla
+    {
+        if(A->initializated)    // A ya habia sido definido
+        {
+            fprintf(stderr, "Error: Detected redefinition of type \"%s\" \n", type_name);
+            exit(1);
+        }
+        modify_type(A, NULL, B, true);   // modificar A  para que herede de Bpe_name)->type_name, type_table_lookup(table, type_name)->parent->type_name );
+    }
+    else    // si A no se encuentra en la tabla, ingresarlo
+    {
+        A = create_user_defined_type(type_name, NULL, B, true);
+        add_type(table, A);
+    }   
+    
+}
+
 TypeDescriptor* type_table_lookup(TypeTable *table, const char *name) {
     for (int i = 0; i < table->count; i++) {
         if (strcmp(table->types[i]->type_name, name) == 0) {

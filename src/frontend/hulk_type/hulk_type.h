@@ -18,8 +18,7 @@ typedef struct TypeDescriptor {
     TypeInfo* info;                 // NULL para tipos primitivos, apunta a la información del tipo para tipos definidos por el usuario.
     struct TypeDescriptor* parent;  // Tipo padre, Object por defecto
     bool initializated;             // Especifica si el tipo ya ha sido inicializado(para tipos del usuario)
-
-    LLVMTypeRef llvm_type; // Referencia al tipo de dato en LLVM, NULL si no se ha generado
+    LLVMTypeRef llvm_type;          // Referencia al tipo de dato en LLVM, NULL si no se ha generado
 } TypeDescriptor;
 
 typedef struct TypeInfo {
@@ -33,9 +32,12 @@ typedef struct TypeInfo {
 // Prototipos de funciones
 TypeDescriptor* create_builtin_type(HULK_Type tag, const char *type_name, TypeDescriptor* parent);
 TypeDescriptor* create_user_defined_type(const char *name, TypeInfo* info, TypeDescriptor* parent, bool init);
+void modify_type(TypeDescriptor* t, TypeInfo* info, TypeDescriptor* parent, bool init );
+
 bool inherits_from(TypeDescriptor* t1, TypeDescriptor* t2);
 bool conforms(TypeDescriptor* t1 , TypeDescriptor* t2);
 bool cmp_type(TypeDescriptor* t1, TypeDescriptor* t2);
+
 void free_type_descriptor(TypeDescriptor* type);
 void free_type_info(TypeInfo* info);
 #endif // HULK_TYPE_H

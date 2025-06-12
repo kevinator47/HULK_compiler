@@ -1,15 +1,51 @@
 #include <llvm-c/Core.h>
 #include "../../../frontend/ast/ast.h"
 #include "utils.h"
+#include "generator.h"
 
-LLVMTypeRef get_llvm_type_from_descriptor(TypeDescriptor* desc, LLVMContextRef context) {
-    switch (desc->tag) {
-        case HULK_Type_Number:   return LLVMDoubleTypeInContext(context);
-        case HULK_Type_Boolean:  return LLVMInt1TypeInContext(context);
-        case HULK_Type_String:   return LLVMPointerType(LLVMInt8TypeInContext(context), 0);
-
-        default: return NULL;
+LLVMTypeRef get_llvm_type_from_descriptor(TypeDescriptor* desc, LLVMCodeGenerator* generator) {
+    if (!desc) {
+        fprintf(stderr, "Error: Descriptor de tipo nulo al obtener tipo LLVM.\n");
+        return NULL;
     }
+    printf("[get_llvm_type_from_descriptor] Resolviendo tipo: %s (tag=%d)\n", desc->type_name, desc->tag);
+    if (desc->llvm_type) return desc->llvm_type;
+
+    switch (desc->tag) {
+        case HULK_Type_Number:
+            desc->llvm_type = LLVMDoubleTypeInContext(generator->context);
+            break;
+        case HULK_Type_Boolean:
+            desc->llvm_type = LLVMInt1TypeInContext(generator->context);
+            break;
+        case HULK_Type_String:
+            desc->llvm_type = LLVMPointerType(LLVMInt8TypeInContext(generator->context), 0);
+            break;
+        case HULK_Type_UserDefined: 
+            desc->llvm_type = LLVMStructCreateNamed(generator->context, desc->type_name);
+            TypeInfo* info = desc->info;
+            int n = info->param_count;
+            LLVMTypeRef* members = malloc(sizeof(LLVMTypeRef) * n);
+            for (int i = 0; i < n; ++i) {
+                Symbol* sym = lookup_symbol(info->scope, info->params_name[i], true);
+                TypeDescriptor* attr_desc = sym->type;
+                if (!attr_desc) {
+                    fprintf(stderr, "Error: No se encontró el tipo del atributo '%s' en el tipo '%s'.\n", info->params_name[i], desc->type_name);
+                    members[i] = LLVMInt8TypeInContext(generator->context); // fallback
+                } else {
+                    members[i] = get_llvm_type_from_descriptor(attr_desc, generator);
+                }
+            }
+            LLVMStructSetBody(desc->llvm_type, members, n, 0);
+            free(members);          
+            break;
+        
+        default:
+            fprintf(stderr, "Error: Tipo no soportado para generación de código LLVM: %d\n", desc->tag);
+            desc->llvm_type = LLVMInt8TypeInContext(generator->context); // fallback
+            break;
+    }
+    return desc->llvm_type;
 }
 
 BuiltinKind get_builtin_kind(const char* name) {

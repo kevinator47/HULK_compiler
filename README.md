@@ -1,60 +1,64 @@
+# 🦖 HULK Compiler
 
-# 🦖 Compilador HULK
-Un compilador para el lenguaje HULK implementado en C++
+This project is a compiler for the HULK programming language, developed as part of a third-year Computer Science course in Compiler Construction at university. The compiler is implemented in C and leverages Flex and Bison for lexical and syntactic analysis, and LLVM for code generation.
 
-# 📂 Estructura del Proyecto
+## Project Overview ℹ️
 
-```plaintext
-.
-├── build/          # Directorio generado(ejecutables y objetos)
-├── include/        # Headers (.hpp)
-│   ├── lexer.hpp   # Analizador léxico
-│   ├── parser.hpp  # Analizador sintáctico
-│   └── ast.hpp     # Árbol de sintaxis abstracta
-├── src/            # Código fuente (.cpp)
-│   ├── main.cpp    # Punto de entrada
-│   ├── lexer.cpp   # Implementación del lexer
-│   ├── parser.cpp  # Implementación del parser
-│   └── ast.cpp     # Implementación del AST
-├── script.hulk     # Ejemplo de código HULK (input)
-└── Makefile        # Automatiza compilación y ejecución
-```
-## ⚙️ Dependencias
-Compilador: g++ (C++17)
+The HULK compiler translates source code written in the HULK language into LLVM IR and/or native executables. The project demonstrates the full compilation pipeline, including lexical analysis, parsing, AST construction, semantic analysis, and code generation.
 
-Herramientas: make
+This project is part of the curriculum for the "Compilación" (Compiler Construction) course, aiming to provide hands-on experience in building a working compiler from scratch.
 
-# 🚀 Compilación y Ejecución
-## Compilar (genera ejecutable en build/hulkc)
-make build
+## Project Structure 🏛️
 
-## Ejecutar el compilador con un archivo .hulk
-make run  # Usa script.hulk por defecto
+- **build/**  
+  Contains build artifacts, object files, and the final compiler executable.
 
-## Limpiar archivos generados
-make clean
+- **src/**  
+  Main source code for the compiler.
+  - **main.c**: Entry point for the compiler.
+  - **backend/**: Code generation logic.
+    - **codegen/**: General code generation.
+    - **llvm/**: LLVM-specific code generation.
+  - **frontend/**: Frontend logic.
+    - **ast/**: Abstract Syntax Tree node definitions and logic.
+    - **hulk_type/**: Type system and type descriptors.
+    - **scope/**: Symbol tables and scope management.
+    - **semantic_check/**: Semantic analysis and type checking.
+    - **parser/**: Parser definitions (Bison).
+    - **lexer/**: Lexer definitions (Flex).
 
-# 🔧 Componentes Clave
-Lexer: Convierte código fuente en tokens.
+- **test/**  
+  Test cases for the compiler, organized by feature (basic, conditional, functions, etc.).
 
-Parser: Construye el AST a partir de tokens.
+- **grammars/**  
+  Documentation for the HULK grammar.
 
-AST: Representación estructurada del código.
+- **script.hulk**  
+  Example HULK source code (to be provided by the user).
 
-Generación de código: Transforma el AST a código objetivo (opcional).
+- **Makefile**  
+  Build and automation instructions.
 
-## 📌 Notas
-El ejecutable final es build/hulkc.
+- **README.md**  
+  Project documentation (this file).
 
-Modifica script.hulk para probar diferentes entradas.
+- **WORKFLOW.md**  
+  Project planning and workflow notes.
 
-## 📋 Ejemplo de Uso
-Escribe código HULK en script.hulk:
+## Usage
 
-print("¡Hola Mundo!");
+Follow these steps to use the HULK compiler:
 
-### Ejecuta:
+1. **Clone the repository**
+   ```sh
+   git clone <repo-url>
+   cd HULK_compiler
+2. **Compilar el proyecto**
+    ```sh
+    make compile
+    ```
 
-make build
-
-make run
+3. **Ejecutar el programa compilado**
+    ```sh
+    make execute
+    ```

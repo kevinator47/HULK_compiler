@@ -12,7 +12,15 @@ function gcd(a : Number,b : Number): Number {if(a%b == 0) {
                                             }
                                         else gcd(a,a%b);
 }
+type Point(x : Number, y : Number)
 {
+    X = x;
+    Y = y;
+
+    getX() => X;
+}
+{
+    let p = new Point(1,2) in print(p.getX());
     gcd(16,10);
     suma(10,2);
     "Hola";

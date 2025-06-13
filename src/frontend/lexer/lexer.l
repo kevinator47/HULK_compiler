@@ -30,6 +30,7 @@ id          {letter}({letter}|{digit}|_)*
 "inherits"          { return INHERITS; }
 "in"                { return IN; }
 "type"              { return TYPE; }
+"new"               { return NEW; }
 "function"          { return FUNCTION; }
 {number}            { yylval.dval = atof(yytext); return NUMBER; }
 {id}                { yylval.sval = strdup(yytext); return ID; }
@@ -60,6 +61,7 @@ id          {letter}({letter}|{digit}|_)*
 ","                 { return COMMA; }
 ":="                { return REASSIGN; }
 ":"                 { return COLON; }
+"."                 { return DOT; }
 {string}            {
                         char* src = yytext + 1;           // skip starting quote
                         yytext[strlen(yytext)-1] = '\0';  // remove ending quote

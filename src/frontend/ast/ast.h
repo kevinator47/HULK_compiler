@@ -29,6 +29,8 @@ typedef enum {
     AST_Node_Program,
     AST_Node_Type_Definition,
     AST_Node_Type_Definition_List,
+    AST_Node_Instaciate_Type,
+    AST_Node_Function_Call_Type
 } ASTNodeType;
 
 typedef struct ASTNode {
@@ -168,6 +170,23 @@ typedef struct TypeDefinitionListNode {
     int count;
 } TypeDefinitionListNode ;
 
+typedef struct InstanciateNode{
+    ASTNode base;
+    char* type_name;
+    ASTNode** args;
+    int arg_count;
+    SymbolTable* symbol_table;
+}InstanciateNode;
+
+typedef struct FuntionCallTypeNode{
+    ASTNode base;
+    char* type_name;
+    char* func_name;
+    ASTNode** args;
+    int arg_count;
+    SymbolTable* scope;
+}FuntionCallTypeNode;
+
 typedef struct ProgramNode {
     // Nodo que representa un programa completo
     ASTNode base; // Nodo base del AST
@@ -195,6 +214,8 @@ ASTNode* create_function_definition_list_node(TypeTable *table);
 ASTNode* create_function_call_node(char* name, ASTNode** args, int arg_count, TypeTable *table);
 ASTNode* create_type_definition_node(char* type_name, char** param_names, char** param_types, int param_count, char* parent_name, ASTNode** parent_args, int parent_arg_count, ASTNode* body, TypeTable* table);
 ASTNode* create_type_definition_list_node(TypeDefinitionNode** list, int count, TypeTable* table);
+ASTNode* create_instaciate_node(char* type_name, ASTNode** args, int arg_count, TypeTable* table);
+ASTNode* create_func_call_type_node(char* type_name, char* func_name, ASTNode** args, int arg_count, TypeTable* table);
 ASTNode* create_program_node(ASTNode* function_list, ASTNode* type_list, ASTNode *root, TypeTable *table);
 
 void register_func_params(FunctionDefinitionNode* node, SymbolTable* parent_scope, TypeTable* table);
@@ -217,6 +238,8 @@ void print_function_definition_list_node(FunctionDefinitionListNode *node, int i
 void print_type_definition_node(TypeDefinitionNode* node, int indent_level);
 void print_type_definition_list_node(TypeDefinitionListNode* node, int indent_level);
 void print_function_call_node(FunctionCallNode* node , int indent_level);
+void print_instanciate_type_node(InstanciateNode* node, int indent_level);
+void print_func_call_type_node(FuntionCallTypeNode* node, int indent_level);
 void print_program_node(ProgramNode *node, int indent_level);
 void print_indent(int indent);
 
@@ -237,6 +260,8 @@ void free_function_definition_list_node(FunctionDefinitionListNode* node);
 void free_function_call_node(FunctionCallNode* node);
 void free_type_definition_node(TypeDefinitionNode* node);
 void free_type_definition_list_node(TypeDefinitionListNode* node);
+void free_instanciate_type_node(InstanciateNode* node);
+void free_func_call_type_node(FuntionCallTypeNode* node);
 void free_program_node(ProgramNode* node);
 
 #endif // AST_H

@@ -374,6 +374,47 @@ void print_program_node(ProgramNode* node, int indent) {
     print_ast_node(node->root, indent + 2);
 }
 
+void print_instanciate_type_node(InstanciateNode* node, int indent_level){
+    if(!node) return;
+
+    print_indent(indent_level);
+    
+    printf("Instance Type %s \n", node->type_name);
+    print_indent(indent_level);
+
+    printf("Return Type: %s\n", node->base.return_type);
+    print_indent(indent_level);
+
+    printf("Args: %d\n", node->arg_count);
+    print_indent(indent_level);
+
+    for (int i = 0; i < node->arg_count; i++)
+    {
+        print_ast_node(node->args[i], indent_level + 1);
+    }
+}
+
+void print_func_call_type_node(FuntionCallTypeNode* node, int indent_level)
+{
+    if(!node) return;
+    print_indent(indent_level);
+
+    printf("Function of Type: %s.%s", node->type_name, node->func_name);
+    print_indent(indent_level);
+
+    printf("Return Type: %s\n", node->base.return_type);
+    print_indent(indent_level);
+
+    printf("Args: %d\n", node->arg_count);
+    print_indent(indent_level);
+
+    for (int i = 0; i < node->arg_count; i++)
+    {
+        print_ast_node(node->args[i], indent_level + 1);
+    }
+    
+}
+
 void print_indent(int indent) {
     for (int i = 0; i < indent + 1; i++) {
         printf("  ");

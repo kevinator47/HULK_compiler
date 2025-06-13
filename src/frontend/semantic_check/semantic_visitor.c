@@ -198,6 +198,30 @@ TypeDescriptor* semantic_visit(SemanticVisitor* visitor, ASTNode* node, SymbolTa
         return type_table_lookup(visitor->typeTable, "Null");
         break;
     }
+
+    case AST_Node_Instaciate_Type: {
+        InstanciateNode* instance_node = (InstanciateNode*) node;
+        instance_node->symbol_table = current_scope;
+
+        for (int i = 0; i < instance_node->arg_count; i++)
+        {
+            semantic_visit(visitor, (ASTNode*) instance_node->args[i], current_scope);
+        }
+        return check_semantic_type_instanciate_node(instance_node, current_scope, visitor->typeTable);
+        break;
+    }
+
+    case AST_Node_Function_Call_Type:{
+        FuntionCallTypeNode* func_call_type_node = (FuntionCallTypeNode*) node;
+        func_call_type_node->scope = current_scope;
+
+        for (int i = 0; i < func_call_type_node->arg_count; i++)
+        {
+            semantic_visit(visitor, (ASTNode*) func_call_type_node->args[i], current_scope);
+        }
+        
+    }
+
     case AST_Node_Program: {
         ProgramNode* program_node = (ProgramNode*) node;
         register_types(program_node->type_definitions, visitor->typeTable, current_scope);

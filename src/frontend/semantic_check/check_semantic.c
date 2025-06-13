@@ -236,6 +236,76 @@ TypeDescriptor* check_semantic_function_call_node(FunctionCallNode* node, Symbol
 
 }
 
+TypeDescriptor* check_semantic_type_instanciate_node(InstanciateNode* node, SymbolTable* current_scope, TypeTable* table)
+{
+    TypeDescriptor* type = type_table_lookup(table, node->type_name);
+    if (!type && type->tag == HULK_Type_UserDefined)
+    {
+        fprintf(stderr, "The type %s does'nt exists \n", node->type_name);
+        exit(1);
+    }
+    if(type->info->param_count != node->arg_count)
+    {
+        fprintf(stderr, "The type %s not wait for %d params \n", type->type_name, node->arg_count);
+        exit(1);
+    }
+    for (int i = 0; i < node->arg_count; i++)
+    {
+        TypeDescriptor* arg_type = node->args[i]->return_type;
+        TypeDescriptor* expected_type = lookup_symbol(type->info->scope, type->info->params_name[i], false)->type;
+        if (!conforms(arg_type, expected_type))
+        {
+            fprintf(stderr, "Type error in argument %d of instance '%s'\n", i, node->type_name);
+            exit(1);
+        }
+    }
+    node->base.return_type = type->tag;
+    return node->base.return_type;
+}
+
+TypeDescriptor* check_semantic_function_call_type_node(FuntionCallTypeNode* node, SymbolTable* current_scope, TypeTable* table)
+{
+    Symbol* s = lookup_symbol(table, node->type_name, true);
+    if(!s)
+    {
+        fprintf(stderr,"Variable %s not found \n", node->type_name);
+        exit(1);
+    }
+    if (s->type->tag != HULK_Type_UserDefined)
+    {
+        fprintf(stderr, "The type %s don't have functions \n", s->type->type_name);
+        exit(1);
+    }
+    Symbol* func_symbol = look_function_inherancy(node->func_name, node->arg_count, s->type);
+    if (!func_symbol)
+    {
+        fprintf(stderr, "The function %s with %d params is not defined for this type our his ancesters \n", node->func_name, node->arg_count);
+        exit(1);
+    }
+    FunctionDefinitionNode* func = ((FunctionDefinitionNode*) func_symbol->value);
+    for (int i = 0; i < func->param_count; i++)
+    {
+        TypeDescriptor* arg_type = node->args[i]->return_type;
+        TypeDescriptor* expected_type = lookup_symbol(func->scope, func->params[i], false);
+        if (!conforms(arg_type, expected_type))
+        {
+            fprintf(stderr, "Type error in argument %d of function '%s'\n", i, node->func_name);
+            exit(1);
+        }
+    }
+    node->base.return_type = func_symbol->type;
+    return node->base.return_type;
+}
+
+Symbol* look_function_inherancy(char* func_name, int arg_count, TypeDescriptor* current)
+{
+    if(!current) return NULL;
+    for (int i = 0; i < current->info->scope->size; i++)
+    {
+        Symbol* func = lookup_function_by_signature(current->info->scope, func_name, arg_count);
+    }
+    return look_function_inherancy(func_name, arg_count, current->parent);
+}
 void add_assigment_to_scope(SymbolTable* scope, VariableAssigment* assigment, TypeTable* table) {
     
     Symbol* symbol ;    // symbol that will be inserted into the scope

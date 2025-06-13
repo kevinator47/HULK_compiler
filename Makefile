@@ -118,3 +118,22 @@ clean_tests:
 	@echo "Eliminando archivos .ll generados en los tests..."
 	@find test -name '*.ll' -delete
 	@echo "Limpieza de tests completada."
+
+# Compila el script.hulk y genera el directorio hulk/ con output.ll
+compile: $(BIN)
+	@echo "Compilando script.hulk y generando artifacts en ./hulk ..."
+	@mkdir -p hulk
+	@./$(BIN) script.hulk
+	@if [ -f output.ll ]; then \
+	    mv output.ll hulk/output.ll; \
+	    echo "  [OK] Artifact generado: hulk/output.ll"; \
+	else \
+	    echo "  [FAIL] No se generó output.ll"; \
+	    exit 1; \
+	fi	
+# E	ecuta el código LLVM generado (requiere clang y un sistema Linux)
+execute: compile
+	@echo "Compilando a binario nativo y ejecutando..."
+	@clang hulk/output.ll -o hulk/hulk_exe -lm -lc
+	@./hulk/hulk_exe	
+.PHONY: compile execute

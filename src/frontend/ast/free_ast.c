@@ -292,6 +292,41 @@ void free_type_definition_list_node(TypeDefinitionListNode* node) {
     free(node);
 }
 
+void free_instanciate_type_node(InstanciateNode* node)
+{
+    if (!node) return;
+
+    if (node->type_name) free(node->type_name);
+
+    if (node->args)
+    {
+        for (int i = 0; i < node->arg_count; i++) {
+            free_ast_node(node->args[i]);
+        }
+
+        free(node->args);
+    }
+    free(node);
+}
+
+void free_func_call_type_node(FuntionCallTypeNode* node)
+{
+    if(!node) return;
+
+    if(node->type_name) free(node->type_name);
+    if(node->func_name) free(node->func_name);
+
+    if(node->args)
+    {
+        for (int i = 0; i < node->arg_count; i++)
+        {
+            free_ast_node(node->args[i]);
+        }
+        free(node->args);
+    }
+    free(node);
+}
+
 void free_program_node(ProgramNode* node) {
     // Libera la memoria reservada por un nodo Programa
     if (!node) return;

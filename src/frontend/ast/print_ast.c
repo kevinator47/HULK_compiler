@@ -68,6 +68,10 @@ void print_ast_node(ASTNode *node, int indent) {
             print_type_definition_list_node((TypeDefinitionListNode*)node, indent);
             break;
         }
+        case AST_Node_Instanciate_Type: {
+            print_instanciate_type_node((InstanciateNode*) node, indent);
+            break;
+        }
         case AST_Node_Program: {
             print_program_node((ProgramNode*) node, indent);
             break;
@@ -354,6 +358,22 @@ void print_type_definition_list_node(TypeDefinitionListNode* node, int indent) {
     }
 }
 
+void print_instanciate_type_node(InstanciateNode* node, int indent_level){
+    if(!node) return;
+
+    print_indent(indent_level);
+    
+    printf("Instance Type %s \n", node->type_name);
+    print_indent(indent_level);
+
+    printf("Args: %d\n", node->arg_count);
+    
+    for (int i = 0; i < node->arg_count; i++)
+    {
+        print_ast_node(node->args[i], indent_level + 1);
+    }
+}
+
 void print_program_node(ProgramNode* node, int indent) {
     // Imprime un nodo Programa [para DEBUG]
     if (!node) return;
@@ -373,48 +393,6 @@ void print_program_node(ProgramNode* node, int indent) {
     printf("Root Expression:\n");
     print_ast_node(node->root, indent + 2);
 }
-
-void print_instanciate_type_node(InstanciateNode* node, int indent_level){
-    if(!node) return;
-
-    print_indent(indent_level);
-    
-    printf("Instance Type %s \n", node->type_name);
-    print_indent(indent_level);
-
-    printf("Return Type: %s\n", node->base.return_type);
-    print_indent(indent_level);
-
-    printf("Args: %d\n", node->arg_count);
-    print_indent(indent_level);
-
-    for (int i = 0; i < node->arg_count; i++)
-    {
-        print_ast_node(node->args[i], indent_level + 1);
-    }
-}
-
-void print_func_call_type_node(FuntionCallTypeNode* node, int indent_level)
-{
-    if(!node) return;
-    print_indent(indent_level);
-
-    printf("Function of Type: %s.%s", node->type_name, node->func_name);
-    print_indent(indent_level);
-
-    printf("Return Type: %s\n", node->base.return_type);
-    print_indent(indent_level);
-
-    printf("Args: %d\n", node->arg_count);
-    print_indent(indent_level);
-
-    for (int i = 0; i < node->arg_count; i++)
-    {
-        print_ast_node(node->args[i], indent_level + 1);
-    }
-    
-}
-
 void print_indent(int indent) {
     for (int i = 0; i < indent + 1; i++) {
         printf("  ");

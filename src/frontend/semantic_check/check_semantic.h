@@ -13,9 +13,7 @@ TypeDescriptor* check_semantic_variable_node(VariableNode* node);
 TypeDescriptor* check_semantic_reassign_node(ReassignNode* node);
 TypeDescriptor* check_semantic_function_definition_node(FunctionDefinitionNode* node, TypeTable* table);
 TypeDescriptor* check_semantic_function_call_node(FunctionCallNode* node, SymbolTable* current_scope);
-TypeDescriptor* check_semantic_type_definition_node(TypeDefinitionNode* node, SymbolTable* current_scope, TypeTable* table);
-TypeDescriptor* check_semantic_type_instanciate_node(InstanciateNode* node, SymbolTable* current_scope, TypeTable* table);
-TypeDescriptor* check_semantic_function_call_type_node(FuntionCallTypeNode* node, SymbolTable* current_scope, TypeTable* table);
-Symbol* look_function_inherancy(char* func_name, int arg_count, TypeDescriptor* current); //Chequea si esto no hace falta
+TypeDescriptor* check_semantic_type_definition_node(TypeDefinitionNode* node, TypeTable* table);
+TypeDescriptor* check_semantic_type_instanciate_node(InstanciateNode* node, TypeTable* table);
 void add_assigment_to_scope(SymbolTable* scope, VariableAssigment* assigment, TypeTable* table);
 void register_function_definition(FunctionDefinitionNode* node, SymbolTable* scope, TypeTable* table);

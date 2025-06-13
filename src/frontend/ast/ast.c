@@ -335,17 +335,20 @@ ASTNode* create_type_definition_list_node(TypeDefinitionNode** list, int count, 
     return (ASTNode*) node;
 }
 
-ASTNode* create_instaciate_node(char* type_name, ASTNode** args, int arg_count, TypeTable* table)
+ASTNode* create_instanciate_node(char* type_name, ASTNode** args, int arg_count, TypeTable* table)
 {
     InstanciateNode* node = malloc(sizeof(InstanciateNode));
-    node->base.type = AST_Node_Instaciate_Type;
+    node->base.type = AST_Node_Instanciate_Type;
     node->base.accept = generic_ast_accept;
     node->base.return_type = type_table_lookup(table, "Undefined");
 
     node->type_name = type_name;
     node->arg_count = arg_count;
     node->args = malloc(sizeof(ASTNode *) * arg_count);
-    node->symbol_table = NULL;
+
+    for (int i = 0; i < arg_count; i++) {
+        node->args[i] = args[i];
+    }
 
     return (ASTNode *) node;
 }
@@ -360,6 +363,10 @@ ASTNode* create_func_call_type_node(char* type_name, char* func_name, ASTNode** 
     node->func_name = func_name;
     node->arg_count = arg_count;
     node->args = malloc(sizeof(ASTNode *) * arg_count);
+    for (int i = 0; i < arg_count; i++) {
+        node->args[i] = args[i];
+    }
+    
     node->scope = NULL;
 
     return (ASTNode *) node;

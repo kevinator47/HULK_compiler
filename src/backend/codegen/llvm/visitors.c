@@ -326,7 +326,7 @@ LLVMValueRef visit_ReassignNode_impl(LLVMCodeGenerator* self, ReassignNode* node
 LLVMValueRef visit_FunctionDefinition_impl(LLVMCodeGenerator* self, FunctionDefinitionNode* node) {
     LLVMTypeRef* param_types = malloc(node->param_count * sizeof(LLVMTypeRef));
     for (int i = 0; i < node->param_count; ++i) {
-        Symbol* param_symbol = lookup_symbol(node->scope, node->params[i]->name, true);
+        Symbol* param_symbol = lookup_symbol(node->scope, node->params[i]->name, SYMBOL_ANY ,true);
         if (!param_symbol) {
             fprintf(stderr, "Error: Símbolo de parámetro '%s' no encontrado en el scope de la función '%s'.\n", node->params[i]->name, node->name);
             free(param_types);
@@ -404,7 +404,7 @@ LLVMValueRef visit_FunctionDefinition_impl(LLVMCodeGenerator* self, FunctionDefi
 void declare_FunctionHeaders_impl(LLVMCodeGenerator* self, FunctionDefinitionListNode* node) {
     for (int i = 0; i < node->function_count; i++) {
         FunctionDefinitionNode* fn_node = node->functions[i];
-        Symbol* function_symbol = lookup_symbol(fn_node->scope, fn_node->name, true);
+        Symbol* function_symbol = lookup_symbol(fn_node->scope, fn_node->name, SYMBOL_ANY, true);
         if(fn_node == NULL) {
             fprintf(stderr, "Error: Nodo de función nulo en declare_FunctionHeaders_impl.\n");
             continue;
@@ -415,7 +415,7 @@ void declare_FunctionHeaders_impl(LLVMCodeGenerator* self, FunctionDefinitionLis
         }
         LLVMTypeRef* param_types = malloc(fn_node->param_count * sizeof(LLVMTypeRef));
         for (int j = 0; j < fn_node->param_count; ++j) {
-            Symbol* param_symbol = lookup_symbol(fn_node->scope, fn_node->params[j]->name, true);
+            Symbol* param_symbol = lookup_symbol(fn_node->scope, fn_node->params[j]->name, SYMBOL_ANY, true);
             if (param_symbol == NULL) {
                 fprintf(stderr, "Error: Símbolo de parámetro '%s' no encontrado en el scope de la función '%s'.\n", fn_node->params[j]->name, fn_node->name);
                 free(param_types);

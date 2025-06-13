@@ -141,7 +141,7 @@ typedef struct FunctionDefinitionListNode {
 } FunctionDefinitionListNode;
 
 typedef struct FunctionCallNode {
-    ASTNode base;
+    ASTNode base;   
     char* name;
     ASTNode** args; 
     int arg_count;
@@ -151,17 +151,17 @@ typedef struct FunctionCallNode {
 typedef struct TypeDefinitionNode {
     ASTNode base;          
     
-    char* type_name;        // Nombre del tipo
+    char* type_name;            // Nombre del tipo
     
-    Param** params;         // Parametros pasados al constructor(NULL si no se especifica)
-    int param_count;        // Cantidad de parametros(0 si no se especifica)
+    Param** params;             // Parametros pasados al constructor(NULL si no se especifica)
+    int param_count;            // Cantidad de parametros(0 si no se especifica)
 
-    char* parent_name;      // Nombre del padre (Object si no se especifica)
-    ASTNode** parent_args;  // Argumentos para pasar al padre(NULL si no se especifica)
-    int parent_arg_count;   // Cantidad de argumentos(0 si no se especifica)
+    char* parent_name;          // Nombre del tipo padre ("Object" si no tiene padre)
+    ASTNode** parent_args;      // Argumentos pasados al constructor del padre(NULL si no se especifica)
+    int parent_arg_count;       // Cantidad de argumentos del padre(0 si no se especifica)
     
-    SymbolTable* scope;     // Scope donde estaran atributos y funciones
-    ExpressionBlockNode* body;          // Cuerpo de la declaracion
+    SymbolTable* scope;         // Scope donde estaran atributos y funciones
+    ExpressionBlockNode* body;  // Cuerpo de la declaracion
 } TypeDefinitionNode;
 
 typedef struct TypeDefinitionListNode {
@@ -217,7 +217,6 @@ ASTNode* create_instanciate_node(char* type_name, ASTNode** args, int arg_count,
 ASTNode* create_func_call_type_node(char* type_name, char* func_name, ASTNode** args, int arg_count, TypeTable* table);
 ASTNode* create_program_node(ASTNode* function_list, ASTNode* type_list, ASTNode *root, TypeTable *table);
 
-void register_func_params(FunctionDefinitionNode* node, SymbolTable* parent_scope, TypeTable* table);
 ASTNode* append_function_definition_to_list(FunctionDefinitionListNode* list, FunctionDefinitionNode* def);
 
 // Prototipos para imprimir nodos(Debug)

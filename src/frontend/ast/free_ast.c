@@ -264,18 +264,6 @@ void free_type_definition_node(TypeDefinitionNode* node) {
         free(node->params);
     }
     
-    if(node->parent_args)
-    {
-        for (int i = 0; i < node->parent_arg_count; i++) 
-        {
-            free_ast_node(node->parent_args[i]);
-        }
-        free(node->parent_args);
-    }
-    
-    free(node->type_name);
-    free(node->parent_name);
-
     free_expression_block_node(node->body);
     free(node);
 }

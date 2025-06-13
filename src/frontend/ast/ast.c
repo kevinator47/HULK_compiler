@@ -230,23 +230,6 @@ ASTNode* append_function_definition_to_list(FunctionDefinitionListNode* list, Fu
     return (ASTNode*)list;
 }
 
-void register_func_params(FunctionDefinitionNode* node, SymbolTable* parent_scope, TypeTable* table) {
-    // Crea un nuevo scope para la función
-    node->scope = create_symbol_table(parent_scope);
-
-    // Agrega los parámetros al scope de la función
-    for (int i = 0; i < node->param_count; i++) {
-        char* param_name = node->params[i]->name;
-        TypeDescriptor* param_type = type_table_lookup(table, node->params[i]->static_type);
-        if(!param_type)
-        {
-            fprintf(stderr, "Error: Undefined type \"%s\" \n", node->params[i]->static_type);
-            exit(1);
-        }
-        insert_symbol(node->scope, create_symbol(param_name, SYMBOL_PARAMETER, param_type, NULL));
-    }
-}
-
 ASTNode* create_function_call_node(char* name, ASTNode** args, int arg_count, TypeTable *table) {
     FunctionCallNode *node = malloc(sizeof(FunctionCallNode));
     if (!node) return NULL;
@@ -267,8 +250,7 @@ ASTNode* create_function_call_node(char* name, ASTNode** args, int arg_count, Ty
     return (ASTNode*) node ;    
 }
 
-ASTNode* create_type_definition_node(char* type_name, char** param_names, char** param_types, int param_count, char* parent_name, 
-    ASTNode** parent_args, int parent_arg_count, ASTNode* body, TypeTable* table)
+ASTNode* create_type_definition_node(char* type_name, char** param_names, char** param_types, int param_count, char* parent_name, ASTNode** parent_args, int parent_arg_count, ASTNode* body, TypeTable* table)
 {
     TypeDefinitionNode* node = malloc(sizeof(TypeDefinitionNode));
 
@@ -297,23 +279,7 @@ ASTNode* create_type_definition_node(char* type_name, char** param_names, char**
             node->params[i] = param;
         }
     }
-    
-    node->parent_name = strdup(parent_name);
-    node->parent_arg_count = parent_arg_count;
-    
-    if(parent_arg_count == 0)
-    {
-        node->parent_args = NULL ;
-    }
-    else
-    {
-        node->parent_args = malloc(sizeof(ASTNode*) * parent_arg_count);
-        for (int i = 0; i < node->parent_arg_count; i++)
-        {
-            node->parent_args[i] = parent_args[i];
-        }
-    }
-    register_user_defined_type(table, type_name, parent_name);    
+
     return (ASTNode*)node;
 }
 

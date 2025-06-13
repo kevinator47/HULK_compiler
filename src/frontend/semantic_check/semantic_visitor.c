@@ -75,6 +75,18 @@ TypeDescriptor* semantic_visit(SemanticVisitor* visitor, ASTNode* node, SymbolTa
         
         break;
     }
+    case AST_Node_Variable_Assigment: {
+        VariableAssigmentNode* assign_node = (VariableAssigmentNode*) node;
+
+        // Establecer el scope actual
+        assign_node->scope = current_scope;
+
+        // Visitar la expresión de valor primero
+        semantic_visit(visitor, assign_node->assigment->value, current_scope);
+
+        return check_semantic_variable_assigment_node(assign_node, visitor->typeTable);
+        break;
+    }
     case AST_Node_Variable: {
         VariableNode* variable_node = (VariableNode*) node;
         variable_node->scope = current_scope;
@@ -91,13 +103,6 @@ TypeDescriptor* semantic_visit(SemanticVisitor* visitor, ASTNode* node, SymbolTa
     }
     case AST_Node_Function_Definition_List: {
         FunctionDefinitionListNode* function_list_node = (FunctionDefinitionListNode*) node;
-
-        // Register each function definition in the current scope and register it's params in it's own scope
-        for (int i = 0; i < function_list_node->function_count; i++) {
-            FunctionDefinitionNode* function_node = function_list_node->functions[i];
-            register_function_definition(function_node, current_scope, visitor->typeTable);
-            register_func_params(function_node, current_scope, visitor->typeTable);
-        }
 
         // Visit each function definition
         for (int i = 0; i < function_list_node->function_count; i++) {
@@ -139,10 +144,6 @@ TypeDescriptor* semantic_visit(SemanticVisitor* visitor, ASTNode* node, SymbolTa
     case AST_Node_Type_Definition: {
         TypeDefinitionNode* type_node = (TypeDefinitionNode*) node;
 
-        // Visit the parent arguments
-        for (int i = 0; i < type_node->parent_arg_count; i++) 
-            semantic_visit(visitor, type_node->parent_args[i], current_scope);
-    
         // Visit the type definition body
         for (int i = 0; i < type_node->body->expression_count; i++) {
             semantic_visit(visitor, type_node->body->expressions[i], type_node->scope);
@@ -177,9 +178,15 @@ TypeDescriptor* semantic_visit(SemanticVisitor* visitor, ASTNode* node, SymbolTa
 
     case AST_Node_Program: {
         ProgramNode* program_node = (ProgramNode*) node;
-        register_types(program_node->type_definitions, visitor->typeTable, current_scope);
-        semantic_visit(visitor, (ASTNode*)program_node->function_list, current_scope);
+
+        // Register types and function so they will be avaiable during the semantic check
+        register_globals(program_node, current_scope, visitor->typeTable);
+        
+        // Visit the type and function definitions
         semantic_visit(visitor, (ASTNode*)program_node->type_definitions, current_scope);
+        semantic_visit(visitor, (ASTNode*)program_node->function_list, current_scope);
+        
+        // Visit the root expression
         program_node->base.return_type = semantic_visit(visitor, program_node->root, current_scope);
         return program_node->base.return_type;
         break; 

@@ -40,17 +40,13 @@ void insert_symbol(SymbolTable* table, Symbol* symbol) {
     }
     
     // Check if the symbol already exists in the current table
-    if (lookup_symbol(table, symbol->name, false)) {
-        // Replace the existing symbol
-        for (int i = 0; i < table->size; i++) {
-            if (strcmp(table->symbols[i]->name, symbol->name) == 0) {
-                free_symbol(table->symbols[i]); // Free the old symbol
-                table->symbols[i] = symbol; // Replace with the new symbol
-                return;
-            }
-        }
+    if (lookup_symbol(table, symbol->name, symbol->kind, false)) 
+    {
+        // Lanzar error 
+        fprintf(stderr, "Error[%d]: Redefinition of symbol \"%s\"", symbol->kind, symbol->name);
+        exit(1);        
     }
-    
+
     // Resize the symbols array if necessary
     if (table->size >= table->capacity) {
     
@@ -65,51 +61,38 @@ void insert_symbol(SymbolTable* table, Symbol* symbol) {
     table->symbols[table->size++] = symbol;
 }
 
-Symbol* lookup_symbol(SymbolTable* table, const char* name, bool search_parent) {
+Symbol* lookup_symbol(SymbolTable* table, const char* name, SymbolKind kind, bool search_parent) {
     if (!table || !name) {
         return NULL; // Invalid input
     }
     
     // Search for the symbol in the current table
     for (int i = 0; i < table->size; i++) {
-        if (strcmp(table->symbols[i]->name, name) == 0) {
-            return table->symbols[i];
-        }
+        Symbol* sym = table->symbols[i];
+        if (strcmp(sym->name, name) == 0 && (kind == SYMBOL_ANY || sym->kind == kind)) 
+            return sym;        
     }
     // If not found in the current table, check the parent table if search_parent is true
     if (table->parent && search_parent) {
-        return lookup_symbol(table->parent, name, true);
+        return lookup_symbol(table->parent, name, kind, true);
     }
     return NULL; // Symbol not found
 }
 
-Symbol* lookup_symbol_type_field(SymbolTable* table, const char* name, bool search_parent) {
-    Symbol* symbol = lookup_symbol(table, name, search_parent);
-    if (symbol && symbol->kind == SYMBOL_TYPE_FIELD) {
-        return symbol;
-    }
-    return NULL; // No se encontró o no es un campo de tipo
-}
-
 Symbol* lookup_function_by_signature(SymbolTable* table, const char* name, int arg_count) {
-    Symbol* func_symbol = lookup_symbol(table, name, true);
+    Symbol* func_symbol = lookup_symbol(table, name, SYMBOL_FUNCTION, true);
 
-    if(!func_symbol || (func_symbol->kind != SYMBOL_FUNCTION)) return NULL;
+    if(!func_symbol) return NULL;
     if(((FunctionDefinitionNode*)func_symbol->value)->param_count != arg_count) return NULL;
     return func_symbol;
 }
 
-void set_symbol_return_type(SymbolTable* table, const char* name, TypeDescriptor* return_type) {
-    if (!table || !name || !return_type) {
-        DIE("Invalid input to set_function_symbol_return_type");
-    }
+void set_symbol_return_type(SymbolTable* table, Symbol* symbol, TypeDescriptor* return_type) {
     
-    Symbol* symbol = lookup_symbol(table, name, true);
-    if (symbol) {
-        symbol->type = return_type; // Update the type of the function symbol
-    } else {
-        DIE("Function not found or not a function symbol");
-    }
+    if (!table || !symbol || !return_type) 
+        DIE("Invalid input to set_function_symbol_return_type");
+    
+    symbol->type = return_type; // Update the type of the function symbol
 }
 
 void free_symbol(Symbol* symbol) {
@@ -127,4 +110,21 @@ void free_symbol_table(SymbolTable* table) {
         free(table->symbols);
         free(table);
     }
+}
+
+void debug_print_scope(SymbolTable* scope, const char* scope_name) {
+    if (!scope) {
+        printf("Scope '%s' is NULL!\n", scope_name);
+        return;
+    }
+    printf("=== Scope '%s' ===\n", scope_name);
+    for (int i = 0; i < scope->size; i++) {
+        Symbol* sym = scope->symbols[i];
+        printf("  [%d] name: '%s', kind: %d, type: %s\n",
+               i,
+               sym->name,
+               sym->kind,
+               sym->type ? sym->type->type_name : "NULL");
+    }
+    printf("====================\n");
 }

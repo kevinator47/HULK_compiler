@@ -237,7 +237,7 @@ void print_variable_node(VariableNode* node, int indent) {
     
     if(node->scope)
     {
-        Symbol* var_symbol = lookup_symbol(node->scope, node->name, true);
+        Symbol* var_symbol = lookup_symbol(node->scope, node->name, SYMBOL_ANY, true);
         print_indent(indent + 1);
         if (var_symbol->type)
         {
@@ -335,15 +335,7 @@ void print_type_definition_node(TypeDefinitionNode* node, int indent) {
     }
 
     print_indent(indent + 1);
-    printf("Parent Name: %s\n", node->parent_name);
-
-    print_indent(indent + 1);
-    printf("Parent Arguments (count = %d):\n", node->parent_arg_count);
-    for (int i = 0; i < node->parent_arg_count; i++) 
-    {
-        print_ast_node(node->parent_args[i], indent + 2);
-    }
-
+    
     print_indent(indent + 1);
     printf("Body:\n");
     print_expression_block_node(node->body, indent + 2);

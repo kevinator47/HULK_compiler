@@ -149,11 +149,40 @@ TypeDescriptor* check_semantic_let_in_node(LetInNode* node)
     return node->base.return_type;       
 }
 
+TypeDescriptor* check_semantic_variable_assigment_node(VariableAssigmentNode* node, TypeTable* table)
+{
+    VariableAssigment* assign = node->assigment;
+
+    // Verificar tipos estatico y dinamico son compatibles
+    TypeDescriptor* static_type = require_type(table, assign->static_type);
+
+    // Verificar que el valor tenga tipo
+    if (!assign->value || !assign->value->return_type) {
+        fprintf(stderr, "Error: Invalid return value on assigment to variable '%s'\n", assign->name);
+        exit(1);
+    }
+
+    TypeDescriptor* dinamyc_type = assign->value->return_type;
+
+    // Verificar compatibilidad de tipos si el tipo estático fue declarado
+    if (static_type->tag != HULK_Type_Undefined && !conforms(dinamyc_type, static_type)) {
+        fprintf(stderr, "Error: tipo '%s' del valor no es compatible con tipo declarado '%s' en variable '%s'\n",
+                dinamyc_type->type_name, static_type->type_name, assign->name);
+        exit(1);
+    }
+
+    // Asignar tipo dinamico a la variable si no se declaró estáticamente
+    node->base.return_type = static_type ? static_type : dinamyc_type;
+
+    return node->base.return_type;
+}
+
 TypeDescriptor* check_semantic_variable_node(VariableNode* node) {
     // Al ejecutarse esta funcion se asume que la referencia al scope ya ha sido asignada
-    Symbol* symbol = lookup_symbol(node->scope, node->name, true);
+    Symbol* symbol = lookup_symbol(node->scope, node->name, SYMBOL_ANY, true);
     if (!symbol) {
-        DIE("Use of undeclared variable");
+        fprintf(stderr, "Error: uso de variable no declarada '%s'\n", node->name);
+        exit(1);
     }
     
     // Asignar el tipo de retorno del nodo variable
@@ -164,13 +193,13 @@ TypeDescriptor* check_semantic_variable_node(VariableNode* node) {
 
 TypeDescriptor* check_semantic_reassign_node(ReassignNode* node) {
     // Verificar que la variable ya esté declarada
-    Symbol* symbol = lookup_symbol(node->scope, node->name, true);
+    Symbol* symbol = lookup_symbol(node->scope, node->name, SYMBOL_ANY, true);
     if (!symbol) {
         DIE("Reassignment to undeclared variable");
     }
-
-    // Insertar el simbolo con el nuevo valor(sobreescribiendo el valor y tipo anterior)
-    insert_symbol(node->scope, create_symbol(node->name, SYMBOL_VARIABLE, node->value->return_type, node->value));
+    // ERROR no se puede reinsertar, cambiar esto
+    // Insertar el simbolo con el nuevo valor(sobreescribiendo el valor y tipo de retorno anterior)
+    insert_symbol(node->scope, create_symbol(node->name, symbol->kind, node->value->return_type, node->value));
 
     // Asignar el tipo de retorno del nodo de reasignación]
     node->base.return_type = node->value->return_type;
@@ -221,7 +250,7 @@ TypeDescriptor* check_semantic_function_call_node(FunctionCallNode* node, Symbol
     for (int i = 0; i < node->arg_count; i++)
     {
         TypeDescriptor* arg_type = node->args[i]->return_type ;
-        TypeDescriptor* expected_type = lookup_symbol(func_def->scope, func_def->params[i]->name, false)->type;
+        TypeDescriptor* expected_type = lookup_symbol(func_def->scope, func_def->params[i]->name, SYMBOL_PARAMETER ,false)->type;
     
         if(!conforms(arg_type, expected_type))
         {           
@@ -237,45 +266,7 @@ TypeDescriptor* check_semantic_function_call_node(FunctionCallNode* node, Symbol
 }
 
 TypeDescriptor* check_semantic_type_definition_node(TypeDefinitionNode* node, TypeTable* table) {
-    
-    // Paso 1: Validar los argumentos al padre
-    TypeDescriptor* parent_type = type_table_lookup(table, node->parent_name);
-    if (!parent_type || !parent_type->initializated || (parent_type->tag == HULK_Type_UserDefined && !parent_type->info)) {
-        fprintf(stderr, "[Semantic Error] Type '%s' inherits from unknown or uninitialized type '%s'\n", node->type_name, node->parent_name);
-        exit(1);
-    }
-    
-    if (parent_type->tag != HULK_Type_UserDefined)
-    {
-        if(node->parent_arg_count != 0)
-        {
-            fprintf(stderr, "[Semantic Error] Builtin type '%s' cannot receive arguments'\n", parent_type->type_name);
-            exit(1);    
-        }
-    }
-    else if (node->parent_arg_count != parent_type->info->param_count) {
-        fprintf(stderr, "[Semantic Error] Type '%s' inherits from '%s' with incorrect number of arguments (%d expected, %d given)\n",
-        node->type_name, node->parent_name,
-        parent_type->info->param_count, node->parent_arg_count);
-        exit(1);
-    }
-        
-    // Paso 2: Validar tipos de los argumentos heredados
-    for (int i = 0; i < node->parent_arg_count; i++) { 
-        char* arg_name = parent_type->info->params_name[i];
-        SymbolTable* parent_scope = parent_type->info->scope;
-        Symbol* field_symbol = lookup_symbol_type_field(parent_scope, arg_name, true);
-
-        TypeDescriptor* expected = field_symbol->type;
-        TypeDescriptor* given = node->parent_args[i]->return_type;
-
-        if (!conforms(given, expected)) {
-            fprintf(stderr, "[Semantic Error] Inheritance argument %d in type '%s' expects type '%s' but got '%s'\n",
-            i, node->type_name,
-            expected->type_name, given->type_name);
-            exit(1);
-        }
-    }
+    // TODO : chequear que argumentos del padre coinciden en tipo con sus parametros
     return type_table_lookup(table, "Null");    
 }
 
@@ -300,7 +291,7 @@ TypeDescriptor* check_semantic_type_instanciate_node(InstanciateNode* node, Type
     for (int i = 0; i < node->arg_count; i++)
     {
         TypeDescriptor* arg_type = node->args[i]->return_type;
-        TypeDescriptor* expected_type = lookup_symbol(type->info->scope, type->info->params_name[i], false)->type;
+        TypeDescriptor* expected_type = lookup_symbol(type->info->scope, type->info->params_name[i], SYMBOL_PARAMETER, false)->type;
         if (!conforms(arg_type, expected_type))
         {
             fprintf(stderr, "Type error in argument %d of instance '%s'\n", i, node->type_name);
@@ -339,18 +330,3 @@ void add_assigment_to_scope(SymbolTable* scope, VariableAssigment* assigment, Ty
     insert_symbol(scope, symbol);
 }
 
-void register_function_definition(FunctionDefinitionNode* node, SymbolTable* scope, TypeTable* table) {
-    // Crear un nuevo símbolo para la definición de la función
-    // TODO: inferencia de tipo para determinar tipo de retorno de la funcion(algortimo de unificacion)
-    TypeDescriptor* static_return_type = type_table_lookup(table, node->static_return_type);
-
-    if(!static_return_type)
-    {
-        fprintf(stderr, "Error: Undefined type \"%s\" \n", node->static_return_type);
-        exit(1);
-    }
-    Symbol* symbol = create_symbol(node->name, SYMBOL_FUNCTION, static_return_type, (ASTNode*)node);
-    
-    // Insertar el símbolo en el scope
-    insert_symbol(scope, symbol);
-}

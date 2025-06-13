@@ -42,8 +42,8 @@ TypeTable *type_table;
 %token ADD SUB MUL DIV MOD POW
 %token CONCAT DCONCAT
 %token AND OR NOT
-%token SEMICOLON COLON COMMA LPAREN RPAREN LBRACKET RBRACKET
-%token IF ELIF ELSE WHILE LET IN
+%token SEMICOLON COLON COMMA LPAREN RPAREN LBRACKET RBRACKET DOT
+%token IF ELIF ELSE WHILE LET IN NEW
 %token ASSIGN REASSIGN FUNCTION ARROW TYPE INHERITS
 
 %type<node> Expression ExprBlock OrExpr AndExpr CompExpr AddExpr MultExpr PowExpr T WhileLoopExpr LetInExpr
@@ -319,6 +319,14 @@ T                       : NUMBER                    { $$ = create_number_literal
                         | ID LPAREN ArgList RPAREN
                         { 
                             $$ = create_function_call_node($1, $3.nodes, $3.count, type_table);
+                        }
+                        | NEW ID LPAREN ArgList RPAREN
+                        {
+                            $$ = create_instanciate_node($2, $4.nodes, $4.count, type_table);
+                        }
+                        | ID DOT ID LPAREN ArgList RPAREN 
+                        {
+                            $$ = create_func_call_type_node($1, $3, $5.nodes, $5.count, type_table);
                         }
                         ;
 

@@ -27,7 +27,7 @@ LLVMTypeRef get_llvm_type_from_descriptor(TypeDescriptor* desc, LLVMCodeGenerato
             int n = info->param_count;
             LLVMTypeRef* members = malloc(sizeof(LLVMTypeRef) * n);
             for (int i = 0; i < n; ++i) {
-                Symbol* sym = lookup_symbol(info->scope, info->params_name[i], true);
+                Symbol* sym = lookup_symbol(info->scope, info->params_name[i], SYMBOL_ANY, true);
                 TypeDescriptor* attr_desc = sym->type;
                 if (!attr_desc) {
                     fprintf(stderr, "Error: No se encontró el tipo del atributo '%s' en el tipo '%s'.\n", info->params_name[i], desc->type_name);

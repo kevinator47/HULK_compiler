@@ -24,24 +24,30 @@ TypeDescriptor* create_user_defined_type(const char *name, TypeInfo* info, TypeD
     type->tag = HULK_Type_UserDefined;
     type->info = info;
     type->parent = parent;
-    type->initializated = init;      
+    type->initializated = init;    
+    type->llvm_type = NULL;  
     return type;
 }
 
-TypeInfo* create_type_info(SymbolTable* scope, int count, Param** params) {
+TypeInfo* create_type_info( Param** params, int count, SymbolTable* scope) {
     TypeInfo* info = malloc(sizeof(TypeInfo));
     if (!info) return NULL;
 
-    info->scope = scope;
-    info->param_count = count;
-    info->params_name = malloc(count * sizeof(char*));
-
-    for (int i = 0; i < count; i++)
-    {
-        info->params_name[i] = strdup(params[i]->name);
+    if (count > 0) {
+        info->param_count = count;
+        info->params_name = malloc(count * sizeof(char*));
+        for (int i = 0; i < count; i++)
+            info->params_name[i] = strdup(params[i]->name);
+    } 
+    else {
+        info->param_count = 0;
+        info->params_name = NULL;
     }
+
+    info->scope = scope;
     return info;
 }
+
 void modify_type(TypeDescriptor* t, TypeInfo* info, TypeDescriptor* parent, bool init ) {
     // Modifica los valores de un tipo
     if (info) t->info = info;

@@ -294,6 +294,7 @@ void free_type_definition_list_node(TypeDefinitionListNode* node) {
 
 void free_instanciate_type_node(InstanciateNode* node)
 {
+    // Libera la memoria reservada por un nodo Instanciacion de Tipo
     if (!node) return;
 
     if (node->type_name) free(node->type_name);

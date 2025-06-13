@@ -29,7 +29,7 @@ typedef enum {
     AST_Node_Program,
     AST_Node_Type_Definition,
     AST_Node_Type_Definition_List,
-    AST_Node_Instaciate_Type,
+    AST_Node_Instanciate_Type,
     AST_Node_Function_Call_Type
 } ASTNodeType;
 
@@ -175,7 +175,6 @@ typedef struct InstanciateNode{
     char* type_name;
     ASTNode** args;
     int arg_count;
-    SymbolTable* symbol_table;
 }InstanciateNode;
 
 typedef struct FuntionCallTypeNode{
@@ -214,7 +213,7 @@ ASTNode* create_function_definition_list_node(TypeTable *table);
 ASTNode* create_function_call_node(char* name, ASTNode** args, int arg_count, TypeTable *table);
 ASTNode* create_type_definition_node(char* type_name, char** param_names, char** param_types, int param_count, char* parent_name, ASTNode** parent_args, int parent_arg_count, ASTNode* body, TypeTable* table);
 ASTNode* create_type_definition_list_node(TypeDefinitionNode** list, int count, TypeTable* table);
-ASTNode* create_instaciate_node(char* type_name, ASTNode** args, int arg_count, TypeTable* table);
+ASTNode* create_instanciate_node(char* type_name, ASTNode** args, int arg_count, TypeTable* table);
 ASTNode* create_func_call_type_node(char* type_name, char* func_name, ASTNode** args, int arg_count, TypeTable* table);
 ASTNode* create_program_node(ASTNode* function_list, ASTNode* type_list, ASTNode *root, TypeTable *table);
 

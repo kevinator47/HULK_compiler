@@ -39,6 +39,7 @@ void add_param_to_scope(SymbolTable* scope, Param* param, TypeTable* table)
 {
     // Inserta un parametro en un scope
     insert_symbol(scope, create_symbol(param->name , SYMBOL_PARAMETER, type_table_lookup(table, param->static_type), NULL));
+    printf("%s\n",type_table_lookup(table, param->static_type)->type_name);
 }
 
 void register_field(TypeDefinitionNode* node, ASTNode* expression, TypeTable* table) {

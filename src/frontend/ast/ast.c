@@ -317,7 +317,7 @@ ASTNode* create_type_definition_list_node(TypeDefinitionNode** list, int count, 
     return (ASTNode*) node;
 }
 
-NewNode* create_new_node(const char* type_name, int arg_count, ASTNode** args, TypeTable* table) {
+ASTNode* create_new_node(const char* type_name, ASTNode** args, int arg_count, TypeTable* table) {
     NewNode* node = malloc(sizeof(NewNode));
     node->base.type = AST_Node_New;  
     node->base.return_type = type_table_lookup(table, "Undefined");
@@ -325,15 +325,17 @@ NewNode* create_new_node(const char* type_name, int arg_count, ASTNode** args, T
     node->type_name = strdup(type_name);
     node->arg_count = arg_count;
     
-    for (int i = 0; i < arg_count; i++)
-    {
-        node->args[i] = args[i];
+    if (arg_count > 0) {
+        node->args = malloc(sizeof(ASTNode*) * arg_count);
+        for (int i = 0; i < arg_count; i++) {
+            node->args[i] = args[i];
+        }
     }
     
-    return node;
+    return (ASTNode*)node;
 }
 
-AttributeAccessNode* create_attribute_access_node(ASTNode* object, const char* attribute_name, ASTNode** args, int arg_count, bool is_method_call, TypeTable* table) {
+ASTNode* create_attribute_access_node(ASTNode* object, const char* attribute_name, ASTNode** args, int arg_count, bool is_method_call, TypeTable* table) {
     AttributeAccessNode* node = malloc(sizeof(AttributeAccessNode));
     node->base.type = AST_Node_Attribute_Access;
     node->base.return_type = type_table_lookup(table, "Undefined");
@@ -343,13 +345,12 @@ AttributeAccessNode* create_attribute_access_node(ASTNode* object, const char* a
     node->attribute_name = strdup(attribute_name); // Copia del string
     node->arg_count = arg_count;
     node->is_method_call = is_method_call;
-    node->scope = NULL;
 
     for (int i = 0; i < arg_count; i++) {
         node->args[i] = args[i]; // Copia de los nodos de argumentos
     }
 
-    return node;
+    return (ASTNode*)node;
 }
 
 ASTNode* create_program_node(ASTNode* function_list, ASTNode* type_definitions, ASTNode *root, TypeTable *table) {

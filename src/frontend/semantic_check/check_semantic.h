@@ -15,3 +15,5 @@ TypeDescriptor* check_semantic_reassign_node(ReassignNode* node);
 TypeDescriptor* check_semantic_function_definition_node(FunctionDefinitionNode* node, TypeTable* table);
 TypeDescriptor* check_semantic_function_call_node(FunctionCallNode* node, SymbolTable* current_scope);
 TypeDescriptor* check_semantic_type_definition_node(TypeDefinitionNode* node, TypeTable* table);
+TypeDescriptor* check_semantic_new_node(NewNode* node, TypeTable* table);
+TypeDescriptor* check_semantic_attribute_access_node(AttributeAccessNode* node);

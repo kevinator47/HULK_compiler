@@ -212,7 +212,7 @@ LLVMValueRef visit_Let_impl(LLVMCodeGenerator* self, LetInNode* node){
     printf("Visitando LetIn \n");
     printf("Analizando asignaciones \n");
     for (int i = 0; i < node->assigment_count; ++i) {
-        VariableAssigment* assign = node->assigments[i];
+        VariableAssigment* assign = node->assigments[i]->assigment;
         char* name = assign->name;
         LLVMValueRef init_val = assign->value->accept(assign->value, self);
         LLVMTypeRef type = LLVMTypeOf(init_val);

@@ -91,10 +91,15 @@ typedef struct VariableAssigment {
     ASTNode* value;
 } VariableAssigment;
 
+typedef struct VariableAssigmentNode {
+    ASTNode base;
+    VariableAssigment* assigment;
+    SymbolTable* scope;
+} VariableAssigmentNode;
 typedef struct LetInNode {
     ASTNode base;
     SymbolTable* scope;
-    VariableAssigment** assigments;
+    VariableAssigmentNode** assigments;
     int assigment_count;
     ASTNode* body;
 } LetInNode;
@@ -104,12 +109,6 @@ typedef struct VariableNode {
     char* name;
     SymbolTable* scope; // Scope donde se encuentra la variable
 } VariableNode;
-
-typedef struct VariableAssigmentNode {
-    ASTNode base;
-    VariableAssigment* assigment;
-    SymbolTable* scope;
-} VariableAssigmentNode;
 
 typedef struct ReassignNode {
     ASTNode base ;
@@ -194,7 +193,6 @@ typedef struct ProgramNode {
     ASTNode* root; // Bloque principal del programa
 } ProgramNode;
 
-
 // Prototipos para crear nodos AST
 ASTNode* create_number_literal_node(double value, TypeTable *table);
 ASTNode* create_string_literal_node(char *value, TypeTable *table);
@@ -204,7 +202,7 @@ ASTNode* create_binary_operation_node(HULK_Op operator, ASTNode *left, ASTNode *
 ASTNode* create_expression_block_node(ASTNode **expressions, int expression_count, TypeTable *table);
 ASTNode* create_conditional_node(ASTNode *condition, ASTNode *then_branch, ASTNode *else_branch, TypeTable *table);
 ASTNode* create_while_loop_node(ASTNode *condition, ASTNode *body, TypeTable *table); 
-ASTNode* create_let_in_node(VariableAssigment** assigments, int assigment_count, ASTNode *body, TypeTable *table);
+ASTNode* create_let_in_node(VariableAssigmentNode** assigments, int assigment_count, ASTNode* body, TypeTable* table);
 ASTNode* create_variable_node(char *name, TypeTable *table);
 ASTNode* create_variable_assigment_node(VariableAssigment* assigment, TypeTable* table);
 ASTNode* create_reassign_node(char *name, ASTNode *value, TypeTable *table);

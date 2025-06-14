@@ -13,13 +13,17 @@ TypeDescriptor* check_semantic_unary_operation_node(UnaryOperationNode* node) {
     // Validar el operador unario
     switch (node->operator) {
         case NOT_TK:
-            if (operand->return_type->tag != HULK_Type_Boolean) {
-                DIE("Invalid type for NOT operator, expected boolean");
+            if (operand->return_type->tag != HULK_Type_Boolean) 
+            {
+                fprintf(stderr, "Error: Invalid type for operator \"%s\" , expected \"Bool\" but received \"%s\" \n", Hulk_Op_Names[node->operator], operand->return_type->type_name);
+                exit(1);
             }
             break;
         case MINUS_TK:
-            if (operand->return_type->tag != HULK_Type_Number) {
-                DIE("Invalid type for MINUS operator, expected number");
+            if (operand->return_type->tag != HULK_Type_Number) 
+            {
+                fprintf(stderr, "Error: Invalid type for operator \"%s\" , expected \"Number\" but received \"%s\" \n", Hulk_Op_Names[node->operator], operand->return_type->type_name);
+                exit(1);
             }
             break;
         default:
@@ -49,10 +53,10 @@ TypeDescriptor* check_semantic_binary_operation_node(BinaryOperationNode* node, 
         case DIV_TK:
         case MOD_TK:
         case EXP_TK:
-            
-            if (left->return_type->tag != HULK_Type_Number || right->return_type->tag != HULK_Type_Number) {
-                printf("%d\n",left->return_type->tag);
-                DIE("Invalid types for arithmetic operator, expected numbers");
+            if (left->return_type->tag != HULK_Type_Number || right->return_type->tag != HULK_Type_Number) 
+            {
+                fprintf(stderr, "Error: Invalid types for operator \"%s\" , expected \"Number\" and \"Number\" but received \"%s\" and \"%s\"\n", Hulk_Op_Names[node->operator], left->return_type->type_name, right->return_type->type_name);
+                exit(1);
             }
             node->base.return_type = number_type; 
             break;
@@ -63,9 +67,10 @@ TypeDescriptor* check_semantic_binary_operation_node(BinaryOperationNode* node, 
         case GE_TK:
         case LT_TK:
         case LE_TK:
-            
-            if (left->return_type->tag != HULK_Type_Number || right->return_type->tag != HULK_Type_Number) {
-                DIE("Invalid types for comparison operator, expected numbers");
+            if (left->return_type->tag != HULK_Type_Number || right->return_type->tag != HULK_Type_Number) 
+            {
+                fprintf(stderr, "Error: Invalid types for operator \"%s\" , expected \"Number\" and \"Number\" but received \"%s\" and \"%s\"\n", Hulk_Op_Names[node->operator], left->return_type->type_name, right->return_type->type_name);
+                exit(1);
             }
             node->base.return_type = bool_type;
             break;
@@ -73,8 +78,10 @@ TypeDescriptor* check_semantic_binary_operation_node(BinaryOperationNode* node, 
         case AND_TK:
         case OR_TK:
 
-            if (left->return_type->tag != HULK_Type_Boolean || right->return_type->tag != HULK_Type_Boolean) {
-                DIE("Invalid types for logical operator, expected booleans");
+            if (left->return_type->tag != HULK_Type_Boolean || right->return_type->tag != HULK_Type_Boolean) 
+            {
+                fprintf(stderr, "Error: Invalid types for operator \"%s\" , expected \"Bool\" and \"Bool\" but received \"%s\" and \"%s\"\n", Hulk_Op_Names[node->operator], left->return_type->type_name, right->return_type->type_name);
+                exit(1);
             }
             node->base.return_type = bool_type;
             break;
@@ -82,8 +89,10 @@ TypeDescriptor* check_semantic_binary_operation_node(BinaryOperationNode* node, 
         case CONCAT_TK:
         case D_CONCAT_TK:
 
-            if (left->return_type->tag != HULK_Type_String) {
-                DIE("Invalid types for concatenation operator, expected string on the left");
+            if (left->return_type->tag != HULK_Type_String) 
+            {
+                fprintf(stderr, "Error: Invalid types for operator \"%s\" , expected \"String\" and \"Any\" but received \"%s\" and \"%s\"\n", Hulk_Op_Names[node->operator], left->return_type->type_name, right->return_type->type_name);
+                exit(1);;
             }
             node->base.return_type = left->return_type;
             break;
@@ -96,12 +105,12 @@ TypeDescriptor* check_semantic_binary_operation_node(BinaryOperationNode* node, 
 
 TypeDescriptor* check_semantic_expression_block_node(ExpressionBlockNode* node, TypeTable* table) {
     // Asignar como tipo de retorno el tipo del último nodo del bloque
-    if (node->expression_count == 0) {
+    if (node->expression_count == 0) 
         node->base.return_type = type_table_lookup(table, "Null");
-    }
-    else {
-        node->base.return_type = node->expressions[node->expression_count - 1]->return_type;
-    }
+
+    else 
+        node->base.return_type = node->expressions[node->expression_count - 1]->return_type ;
+    
     return node->base.return_type;
 }
 
@@ -109,8 +118,10 @@ TypeDescriptor* check_semantic_conditional_node(ConditionalNode* node) {
     // Verificar el tipo de la condición
     ASTNode* condition = node->condition;
     
-    if (condition->return_type->tag != HULK_Type_Boolean) {
-        DIE("Invalid type for condition, expected boolean");
+    if (condition->return_type->tag != HULK_Type_Boolean) 
+    {
+        fprintf(stderr, "Error: Invalid type for condition on if statement, expected \"Bool\" but received \"%s\" \n", condition->return_type->type_name);
+        exit(1);
     }
 
     // Verificar los tipos de las ramas
@@ -118,11 +129,12 @@ TypeDescriptor* check_semantic_conditional_node(ConditionalNode* node) {
     ASTNode* else_branch = node->else_branch;
 
     // Asignar el tipo de retorno del nodo condicional
-    if (!else_branch || conforms(then_branch->return_type , else_branch->return_type)) {
-        node->base.return_type = then_branch->return_type; 
-    } else {
-        printf("Then: %d, Else: %d\n", then_branch->return_type->tag, else_branch->return_type->tag);
-        DIE("Types of THEN and ELSE branches do not match");
+    if (!else_branch || conforms(then_branch->return_type , else_branch->return_type))
+        node->base.return_type = then_branch->return_type;  
+    else 
+    {
+        fprintf(stderr, "Error: Then and Else branches of if-else statetemnt must match, but received \"%s\" and \"%s\"\n", then_branch->return_type->type_name, else_branch->return_type->type_name);
+        exit(1);
     }
 
     return node->base.return_type;
@@ -132,8 +144,10 @@ TypeDescriptor* check_semantic_while_loop_node(WhileLoopNode* node) {
     // Verificar el tipo de la condición
     ASTNode* condition = node->condition;
     
-    if (condition->return_type->tag != HULK_Type_Boolean) {
-        DIE("Invalid type for while loop condition, expected boolean");
+    if (condition->return_type->tag != HULK_Type_Boolean) 
+    {
+        fprintf(stderr, "Error: Invalid type for condition on while loop statement, expected \"Bool\" but received \"%s\" \n", condition->return_type->type_name);
+        exit(1);
     }
 
     // Asignar el tipo de retorno del nodo while loop
@@ -157,7 +171,8 @@ TypeDescriptor* check_semantic_variable_assigment_node(VariableAssigmentNode* no
     TypeDescriptor* static_type = require_type(table, assign->static_type);
 
     // Verificar que el valor tenga tipo
-    if (!assign->value || !assign->value->return_type) {
+    if (!assign->value || !assign->value->return_type) 
+    {
         fprintf(stderr, "Error: Invalid return value on assigment to variable '%s'\n", assign->name);
         exit(1);
     }
@@ -166,8 +181,7 @@ TypeDescriptor* check_semantic_variable_assigment_node(VariableAssigmentNode* no
 
     // Verificar compatibilidad de tipos si el tipo estático fue declarado
     if (static_type->tag != HULK_Type_Undefined && !conforms(dinamyc_type, static_type)) {
-        fprintf(stderr, "Error: tipo '%s' del valor no es compatible con tipo declarado '%s' en variable '%s'\n",
-                dinamyc_type->type_name, static_type->type_name, assign->name);
+        fprintf(stderr, "Error: tipo '%s' del valor no es compatible con tipo declarado '%s' en variable '%s'\n", dinamyc_type->type_name, static_type->type_name, assign->name);
         exit(1);
     }
 
@@ -300,33 +314,5 @@ TypeDescriptor* check_semantic_type_instanciate_node(InstanciateNode* node, Type
     }
     node->base.return_type = type;
     return node->base.return_type;
-}
-
-void add_assigment_to_scope(SymbolTable* scope, VariableAssigment* assigment, TypeTable* table) {
-    Symbol* symbol ;    // symbol that will be inserted into the scope
-
-    TypeDescriptor* dinamyc_type = assigment->value->return_type;
-    printf("%s\n", assigment->static_type);
-    TypeDescriptor* static_type = type_table_lookup(table, assigment->static_type);
-
-    
-    if(static_type->tag == HULK_Type_Undefined)
-    {
-        symbol = create_symbol(assigment->name, SYMBOL_VARIABLE, dinamyc_type, assigment->value);
-    }
-    
-    else if (conforms(dinamyc_type, static_type))
-    {
-        symbol = create_symbol(assigment->name, SYMBOL_VARIABLE, static_type, assigment->value);
-    }
-
-    else
-    {
-        fprintf(stderr , "Error: Variable \"%s\" with static type \"%s\" cannot hold \"%s\" type \n", assigment->name, assigment->static_type, dinamyc_type->type_name );
-        exit(1);
-    }
-
-    // Insertar el símbolo en el scope
-    insert_symbol(scope, symbol);
 }
 

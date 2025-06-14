@@ -145,13 +145,9 @@ void free_let_in_node(LetInNode *node) {
     {
         for (int i = 0; i < node->assigment_count; ++i) 
         {
-            VariableAssigment* a = node->assigments[i];
-            if (a) {
-                free(a->name);
-                free(a->static_type);
-                free_ast_node(a->value);
-                free(a);
-            }
+            VariableAssigmentNode* a = node->assigments[i];
+            if (a) 
+                free_ast_node((ASTNode*)a);
         }
         free(node->assigments);
     }

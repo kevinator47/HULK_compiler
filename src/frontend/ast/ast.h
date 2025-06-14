@@ -29,7 +29,8 @@ typedef enum {
     AST_Node_Program,
     AST_Node_Type_Definition,
     AST_Node_Type_Definition_List,
-    AST_Node_Instanciate_Type,
+    AST_Node_New,
+    AST_Node_Attribute_Access,
     AST_Node_Function_Call_Type
 } ASTNodeType;
 
@@ -169,12 +170,22 @@ typedef struct TypeDefinitionListNode {
     int count;
 } TypeDefinitionListNode ;
 
-typedef struct InstanciateNode{
+typedef struct NewNode {
+    ASTNode base;            // Nodo base
+    char* type_name;         // Nombre del tipo a instanciar ("Persona", etc)
+    int arg_count;           // Cantidad de argumentos para inicializar
+    ASTNode** args;          // Array de punteros a los nodos de argumentos
+} NewNode;
+
+typedef struct AttributeAccessNode {
     ASTNode base;
-    char* type_name;
-    ASTNode** args;
-    int arg_count;
-}InstanciateNode;
+    ASTNode* object;         // La instancia del objeto
+    char* attribute_name;    // Nombre del atributo o método
+    ASTNode** args;          // NULL si es acceso a propiedad
+    int arg_count;           // 0 si es acceso a propiedad
+    bool is_method_call;     // true si es una llamada a método
+    SymbolTable* scope;      // Scope actual, útil para validar visibilidad
+} AttributeAccessNode;
 
 typedef struct FuntionCallTypeNode{
     ASTNode base;
@@ -211,7 +222,6 @@ ASTNode* create_function_definition_list_node(TypeTable *table);
 ASTNode* create_function_call_node(char* name, ASTNode** args, int arg_count, TypeTable *table);
 ASTNode* create_type_definition_node(char* type_name, char** param_names, char** param_types, int param_count, char* parent_name, ASTNode** parent_args, int parent_arg_count, ASTNode* body, TypeTable* table);
 ASTNode* create_type_definition_list_node(TypeDefinitionNode** list, int count, TypeTable* table);
-ASTNode* create_instanciate_node(char* type_name, ASTNode** args, int arg_count, TypeTable* table);
 ASTNode* create_func_call_type_node(char* type_name, char* func_name, ASTNode** args, int arg_count, TypeTable* table);
 ASTNode* create_program_node(ASTNode* function_list, ASTNode* type_list, ASTNode *root, TypeTable *table);
 
@@ -235,7 +245,7 @@ void print_function_definition_list_node(FunctionDefinitionListNode *node, int i
 void print_type_definition_node(TypeDefinitionNode* node, int indent_level);
 void print_type_definition_list_node(TypeDefinitionListNode* node, int indent_level);
 void print_function_call_node(FunctionCallNode* node , int indent_level);
-void print_instanciate_type_node(InstanciateNode* node, int indent_level);
+void print_instanciate_type_node(NewNode node, int indent_level);
 void print_func_call_type_node(FuntionCallTypeNode* node, int indent_level);
 void print_program_node(ProgramNode *node, int indent_level);
 void print_indent(int indent);
@@ -257,7 +267,7 @@ void free_function_definition_list_node(FunctionDefinitionListNode* node);
 void free_function_call_node(FunctionCallNode* node);
 void free_type_definition_node(TypeDefinitionNode* node);
 void free_type_definition_list_node(TypeDefinitionListNode* node);
-void free_instanciate_type_node(InstanciateNode* node);
+void free_instanciate_type_node(NewNode* node);
 void free_func_call_type_node(FuntionCallTypeNode* node);
 void free_program_node(ProgramNode* node);
 

@@ -24,10 +24,6 @@ void register_types(TypeDefinitionListNode* list, SymbolTable* current_scope, Ty
 
         type_def_node->scope = descriptor->info->scope;
 
-        // Insertar self en el scope del tipo
-        Symbol* self_symbol = create_symbol("self", SYMBOL_TYPE_FIELD, descriptor, NULL);
-        insert_symbol(type_def_node->scope, self_symbol);
-
         // Registrar parámetros en el scope del tipo
         register_params(type_def_node, type_def_node->scope, type_table);
 

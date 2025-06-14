@@ -147,9 +147,25 @@ TypeDescriptor* semantic_visit(SemanticVisitor* visitor, ASTNode* node, SymbolTa
     case AST_Node_Type_Definition: {
         TypeDefinitionNode* type_node = (TypeDefinitionNode*) node;
 
-        // Visit the type definition body
-        for (int i = 0; i < type_node->body->expression_count; i++) {
-            semantic_visit(visitor, type_node->body->expressions[i], type_node->scope);
+        // First visit the attribute assigment without self in the scope
+        for (int i = 0; i < type_node->body->expression_count; i++) 
+        {
+            ASTNode* expr = type_node->body->expressions[i];
+            if (expr->type == AST_Node_Variable_Assigment)
+                semantic_visit(visitor, type_node->body->expressions[i], type_node->scope);
+        }
+
+        // Add the self parameter
+        TypeDescriptor* descriptor = type_table_lookup(visitor->typeTable, type_node->type_name);
+        Symbol* self_symbol = create_symbol("self", SYMBOL_TYPE_FIELD, descriptor, NULL);
+        insert_symbol(type_node->scope, self_symbol);
+
+        // Then visit the rest of the expression on the body
+        for (int i = 0; i < type_node->body->expression_count; i++) 
+        {
+            ASTNode* expr = type_node->body->expressions[i];
+            if (expr->type != AST_Node_Variable_Assigment) 
+                semantic_visit(visitor, expr, type_node->scope);
         }
 
         return check_semantic_type_definition_node(type_node, visitor->typeTable);
@@ -166,6 +182,31 @@ TypeDescriptor* semantic_visit(SemanticVisitor* visitor, ASTNode* node, SymbolTa
 
         return type_table_lookup(visitor->typeTable, "Null");
         break;
+    }
+    case AST_Node_New: {
+        NewNode* new_node = (NewNode*) node;
+
+        // Visitar argumentos primero
+        for (int i = 0; i < new_node->arg_count; i++) 
+            semantic_visit(visitor, new_node->args[i], current_scope);
+            
+        return check_semantic_new_node(new_node, visitor->typeTable);
+    }
+    case AST_Node_Attribute_Access: {
+        AttributeAccessNode* access_node = (AttributeAccessNode*) node;
+
+        // Visitar el objeto primero
+        semantic_visit(visitor, access_node->object, current_scope);
+
+        // Visitar cada argumento si es una llamada a método
+        if (access_node->is_method_call) 
+        {
+            for (int i = 0; i < access_node->arg_count; i++) 
+                semantic_visit(visitor, access_node->args[i], current_scope);
+        }
+
+        // Realizar chequeo semántico del nodo
+        return check_semantic_attribute_access_node(access_node);
     }
     case AST_Node_Program: {
         ProgramNode* program_node = (ProgramNode*) node;

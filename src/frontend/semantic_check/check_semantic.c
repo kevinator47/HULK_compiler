@@ -249,7 +249,7 @@ TypeDescriptor* check_semantic_function_definition_node(FunctionDefinitionNode* 
         exit(1);
     }
     
-    if (!conforms(body_return_type, static_return_type))
+    if (static_return_type->tag == HULK_Type_Undefined ||  !conforms(body_return_type, static_return_type))
     {
         fprintf(stderr, "Error: Function %s static return type is %s, but it returns %s\n", node->name, node->static_return_type, body_return_type->type_name);
         exit(1);
@@ -295,3 +295,137 @@ TypeDescriptor* check_semantic_type_definition_node(TypeDefinitionNode* node, Ty
     return type_table_lookup(table, "Null");    
 }
 
+TypeDescriptor* check_semantic_new_node(NewNode* node, TypeTable* type_table) {
+    // Buscar el tipo en la tabla de tipos
+    TypeDescriptor* type_desc = type_table_lookup(type_table, node->type_name);
+
+    if (!type_desc) {
+        fprintf(stderr, "Error semántico: Tipo '%s' no encontrado.\n", node->type_name);
+        node->base.return_type = NULL;
+        return NULL;
+    }
+
+    // Verificar que el tipo tenga type_info (es instanciable)
+    if (!type_desc->info) {
+        fprintf(stderr, "Error semántico: Tipo '%s' no es instanciable (no tiene type_info definido).\n", node->type_name);
+        node->base.return_type = NULL;
+        return NULL;
+    }
+
+    int param_count = type_desc->info->param_count;
+    char** params_name = type_desc->info->params_name;
+
+    // Verificar que el número de argumentos coincida con el número de parámetros del constructor
+    if (node->arg_count != param_count) {
+        fprintf(stderr, "Error semántico: Tipo '%s' espera %d argumentos para el constructor, pero se recibieron %d.\n",
+                node->type_name, param_count, node->arg_count);
+        node->base.return_type = NULL;
+        return NULL;
+    }
+
+    // Por cada argumento:
+    for (int i = 0; i < node->arg_count; i++) {
+        // Obtener el tipo del argumento i-ésimo
+        TypeDescriptor* arg_type = node->args[i]->return_type;
+        if (!arg_type) {
+            fprintf(stderr, "Error semántico: No se pudo determinar el tipo del argumento %d.\n", i);
+            exit(1);
+        }
+        // Buscar el símbolo del parámetro correspondiente en el scope del tipo
+        Symbol* param_symbol = lookup_symbol(type_desc->info->scope, params_name[i], SYMBOL_PARAMETER, false);
+        if (!param_symbol) {
+            fprintf(stderr, "Error interno: Parámetro '%s' no encontrado en el scope del tipo '%s'.\n", params_name[i], node->type_name);
+            exit(1);
+        }
+
+        // Obtener el tipo esperado del parámetro
+        TypeDescriptor* expected_type = param_symbol->type;
+        if (!expected_type) {
+            fprintf(stderr, "Error interno: El parámetro '%s' no tiene tipo definido.\n", params_name[i]);
+            exit(1);
+        }
+
+        // Verificar conformidad (subtipo o igualdad)
+        if (!conforms(arg_type, expected_type)) {
+            fprintf(stderr, "Error semántico: Argumento %d ('%s') tiene tipo incompatible (se esperaba '%s', se recibió '%s').\n", i, params_name[i], expected_type->type_name, arg_type->type_name);
+            exit(1);
+        }
+    }
+
+    node->base.return_type = type_desc;
+    return type_desc;
+}
+
+TypeDescriptor* check_semantic_attribute_access_node(AttributeAccessNode* node) {
+    
+    if (!node || !node->object) {
+        printf("Internal Error: Null AttributeAccessNode or object.\n");
+        exit(1);
+    }
+
+    TypeDescriptor* obj_type = node->object->return_type;
+
+    // Verificación de tipo instanciable
+    if (!obj_type || obj_type->tag != HULK_Type_UserDefined || !obj_type->info) {
+        printf("Semantic Error: Cannot access '%s' on non-instantiable type.\n", node->attribute_name);
+        exit(1);
+    }
+
+    SymbolTable* type_scope = obj_type->info->scope;
+
+    if(!node->is_method_call)
+    {
+        Symbol* attr_symbol = lookup_symbol(type_scope, node->attribute_name, SYMBOL_TYPE_FIELD, false); 
+
+        if (!attr_symbol) 
+        {
+            printf("Semantic Error: '%s' is not defined as an attribute in type '%s'.\n", node->attribute_name,  obj_type->type_name);
+            exit(1);
+        }
+
+        bool is_self =  node->object->type == AST_Node_Variable && strcmp(((VariableNode*)node->object)->name, "self") == 0;
+        
+        if (!is_self) 
+        {
+            printf("Semantic Error: Field '%s' of type '%s' is private and can only be accessed from within the type.\n", node->attribute_name, obj_type->type_name);
+            exit(1);
+        }
+        node->base.return_type = attr_symbol->type;
+        return node->base.return_type;
+    }
+    else 
+    {
+        Symbol* method_symbol = lookup_symbol(type_scope, node->attribute_name, SYMBOL_TYPE_METHOD, true);
+        
+        if (!method_symbol || !method_symbol->value) 
+        {
+            printf("Semantic Error: Method '%s' not found in type '%s'.\n", node->attribute_name, obj_type->type_name);
+            exit(1);
+        }
+
+        FunctionDefinitionNode* method = (FunctionDefinitionNode*)method_symbol->value;
+        
+        if (method->param_count != node->arg_count) {
+            printf("Semantic Error: Method '%s' expects %d arguments but got %d.\n", node->attribute_name, method->param_count, node->arg_count);
+            exit(1);
+        }
+        
+        for (int i = 0; i < node->arg_count; i++)
+        {
+            TypeDescriptor* expected = lookup_symbol(method->scope, method->params[i]->name, SYMBOL_PARAMETER, false)->type;
+            TypeDescriptor* actual = node->args[i]->return_type;
+
+            if (!expected || !actual) {
+                printf("Semantic Error: Argument %d for method '%s' has undefined type.\n", i + 1, node->attribute_name);
+                exit(1);
+            }
+
+            if (!conforms(actual, expected)) {
+                printf("Semantic Error: Argument %d for method '%s' expects type '%s' but got '%s'.\n", i + 1, node->attribute_name, expected->type_name, actual->type_name);
+                exit(1);
+            }
+        }
+        node->base.return_type = method_symbol->type;
+        return node->base.return_type;
+    }
+}

@@ -320,13 +320,19 @@ T                       : NUMBER                    { $$ = create_number_literal
                         }
                         | NEW ID LPAREN ArgList RPAREN
                         {
-                            $$ = create_instanciate_node($2, $4.nodes, $4.count, type_table);
+                            $$ = create_new_node($2, $4.nodes, $4.count, type_table);
                         }
-                        | ID DOT ID LPAREN ArgList RPAREN 
+                        | T DOT ID LPAREN ArgList RPAREN
                         {
-                            $$ = create_func_call_type_node($1, $3, $5.nodes, $5.count, type_table);
+                            // Método: objeto.metodo(args)
+                            $$ = create_attribute_access_node($1, $3, $5.nodes, $5.count, true, type_table);
                         }
-                        ;
+                        | T DOT ID
+                        {
+                            // Atributo: objeto.atributo
+                            $$ = create_attribute_access_node($1, $3, NULL, 0, false, type_table);
+                        }
+                                                ;
 
 ArgList                 : OptionalArgList Expression
                         {

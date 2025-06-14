@@ -64,9 +64,12 @@ TypeDescriptor* semantic_visit(SemanticVisitor* visitor, ASTNode* node, SymbolTa
         
         // Visit the assigments first
         for (int i = 0; i < let_in_node->assigment_count; i++) {
-            VariableAssigment* assigment = let_in_node->assigments[i]; 
-            semantic_visit(visitor, assigment->value, let_in_node->scope);
-            add_assigment_to_scope(let_in_node->scope, assigment, visitor->typeTable);
+            VariableAssigmentNode* assign_node = let_in_node->assigments[i];
+            semantic_visit(visitor, (ASTNode*) assign_node, let_in_node->scope);
+
+            // Añadir la variable al scope luego del chequeo
+            Symbol* symbol = create_symbol(assign_node->assigment->name, SYMBOL_VARIABLE, assign_node->base.return_type, NULL);
+            insert_symbol(let_in_node->scope, symbol);
         }
 
         semantic_visit(visitor, let_in_node->body, let_in_node->scope);

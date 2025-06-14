@@ -196,26 +196,13 @@ void print_variable_assigment_node(VariableAssigmentNode* node, int indent) {
 }
 
 void print_let_in_node(LetInNode* node, int indent) {
-    // Imprime un nodo Let In [para DEBUG]
     if (!node) return;
 
     print_indent(indent);
     printf("LetInNode:\n");
 
     for (int i = 0; i < node->assigment_count; ++i) {
-        print_indent(indent + 1);
-        printf("Assigment %d:\n", i + 1);
-
-        VariableAssigment* a = node->assigments[i];
-        print_indent(indent + 2);
-        printf("Name: %s\n", a->name);
-
-        print_indent(indent + 2);
-        printf("Static Type: %s\n", a->static_type);
-
-        print_indent(indent + 2);
-        printf("Value:\n");
-        print_ast_node(a->value, indent + 3);
+        print_variable_assigment_node(node->assigments[i], indent + 1);
     }
 
     print_indent(indent + 1);

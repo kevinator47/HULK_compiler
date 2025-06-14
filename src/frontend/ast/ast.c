@@ -133,19 +133,19 @@ ASTNode* create_variable_assigment_node(VariableAssigment* assigment, TypeTable*
     return (ASTNode*) node;
 }
 
-ASTNode* create_let_in_node(VariableAssigment** assigments, int assigment_count, ASTNode* body, TypeTable* table) {
+ASTNode* create_let_in_node(VariableAssigmentNode** assigments, int assigment_count, ASTNode* body, TypeTable* table) {
     LetInNode* node = malloc(sizeof(LetInNode));
     if (!node) return NULL;
 
     node->base.type = AST_Node_Let_In;
     node->base.return_type = type_table_lookup(table, "Undefined");
     node->base.accept = generic_ast_accept;
-    node->scope = NULL; // scope will be created later
+    node->scope = NULL;
 
-    node->assigments = malloc(sizeof(VariableAssigment*) * assigment_count);
+    node->assigments = malloc(sizeof(VariableAssigmentNode*) * assigment_count);
     if (!node->assigments) {
         free(node);
-        return NULL; // Error allocating memory
+        return NULL;
     }
 
     for (int i = 0; i < assigment_count; i++) {
@@ -157,6 +157,7 @@ ASTNode* create_let_in_node(VariableAssigment** assigments, int assigment_count,
 
     return (ASTNode*) node;
 }
+
 
 ASTNode* create_variable_node(char *name, TypeTable *table) {
     VariableNode *node = malloc(sizeof(VariableNode));
@@ -259,11 +260,12 @@ ASTNode* create_type_definition_node(char* type_name, char** param_names, char**
     node->base.accept = generic_ast_accept;
 
     node->type_name = strdup(type_name);
+    node->parent_name = strdup(parent_name);
+
     node->body = (ExpressionBlockNode*)body;
     node->scope = NULL;
 
     node->param_count = param_count;
-
     if(param_count == 0)
     {
         node->params = NULL;
@@ -277,6 +279,20 @@ ASTNode* create_type_definition_node(char* type_name, char** param_names, char**
             param->name = strdup(param_names[i]);
             param->static_type = strdup(param_types[i]);
             node->params[i] = param;
+        }
+    }
+
+    node->parent_arg_count = parent_arg_count;
+    if(parent_arg_count == 0)
+    {
+        node->parent_args = NULL;
+    }
+    else
+    {
+        node->parent_args = malloc(sizeof(ASTNode*) * node->parent_arg_count);
+        for (int i = 0; i < node->parent_arg_count; i++)
+        {
+            node->parent_args[i] = parent_args[i];
         }
     }
 

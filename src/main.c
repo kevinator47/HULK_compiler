@@ -1,12 +1,13 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include "backend/codegen/llvm/generator.h"
-#include "frontend/hulk_type/hulk_type.h"
-#include "frontend/hulk_type/type_table.h"
-#include "frontend/semantic_check/semantic_visitor.h"
-#include "frontend/ast/ast.h"
+#include "generator.h"
+#include "common/common.h"
+#include "ast/ast.h"
+#include "hulk_type/hulk_type.h"
+#include "hulk_type/type_table.h"
+#include "semantic_check/semantic_visitor.h"
+#include "scope/function.h"
 #include "../build/parser.tab.h"
-#include "frontend/functions/function.h"
 
 // Declaraciones externas del parser
 extern int yyparse();
@@ -14,36 +15,23 @@ extern FILE* yyin; // Flex usa esta variable para la entrada
 extern ASTNode* root_node;
 
 int main(int argc, char **argv) {
-    //  1. Inicializacion tabla de simbolos
-    extern TypeTable* type_table;
-    type_table = create_type_table();
-
-    // 2. Creacion tipos builtin
-    TypeDescriptor* object_type = create_builtin_type(HULK_Type_Object, "Object", NULL);
-    TypeDescriptor* number_type = create_builtin_type(HULK_Type_Number, "Number", object_type);
-    TypeDescriptor* bool_type = create_builtin_type(HULK_Type_Boolean, "Bool", object_type);
-    TypeDescriptor* string_type = create_builtin_type(HULK_Type_String, "String", object_type);
-    TypeDescriptor* null_type = create_builtin_type(HULK_Type_Null, "Null", object_type);
-    TypeDescriptor* undefined_type = create_builtin_type(HULK_Type_Undefined, "Undefined", object_type);
-    
-    // Agregarlos a la tabla 
-    add_type(type_table, object_type);
-    add_type(type_table, number_type);
-    add_type(type_table, bool_type);
-    add_type(type_table, string_type);
-    add_type(type_table, null_type);
-    add_type(type_table, undefined_type);
-
-    // Mensaje de verificación(debug)
-    printf("Se han cargado %d tipos builtin en la tabla de tipos.\n", type_table->count);
     
     // Declaraciones externas del parser
     extern int yyparse();
-    extern FILE* yyin; // Flex usa esta variable para la entrada
+    extern FILE* yyin; 
     extern ASTNode* root_node;
-    SymbolTable* global_scope = create_symbol_table(NULL); // Crear el scope global
-    Init_Predefined_Functions(global_scope);
-    // 3. Seleccionar fuente de entrada
+    extern TypeTable* type_table;
+    type_table = create_type_table();
+
+    // Registrar tipos predefinidos
+    register_builtin_types(type_table);
+    printf("Se han cargado %d tipos builtin en la tabla de tipos.\n", type_table->count);
+
+    // Registrar funciones predefinidas
+    SymbolTable* global_scope = create_symbol_table(NULL);
+    register_predefined_functions(global_scope, type_table);
+    
+    // Seleccionar fuente de entrada
     if (argc > 1) {
         yyin = fopen(argv[1], "r");
         if (!yyin) {
@@ -54,7 +42,7 @@ int main(int argc, char **argv) {
         yyin = stdin;
     }
 
-    // 4. Parsear la entrada
+    // Parsear la entrada
     int parse_result = yyparse();
     if (parse_result != 0 || root_node == NULL) {
         fprintf(stderr, "Error de parsing.\n");
@@ -68,19 +56,19 @@ int main(int argc, char **argv) {
     return 1;
     }
         
-    // 5. Chequeo Semantico
+    // Chequeo Semantico
     SemanticVisitor* visitor = init_semantic_visitor(type_table);
     semantic_visit(visitor,root_node, global_scope);
 
     printf("Chequeo semántico completado.\n");
     print_ast_node(root_node, 0); // Imprimir el AST para depuración
 
-    // 6. Generación de código LLVM
+    // Generación de código LLVM
     const char* module_name = "hulk_module";
     LLVMCodeGenerator* generator = create_llvm_code_generator("hulk_module", type_table);
     LLVMModuleRef module = generate_code((ProgramNode*)root_node, generator);
 
-    // 7. Imprimir a archivo
+    // Imprimir a archivo
     if (module) {
         char* output_filename = "output.ll";
         char* error_message = NULL;
@@ -98,7 +86,7 @@ int main(int argc, char **argv) {
     }
     destroy_llvm_code_generator(generator);
 
-    // 8.Limpieza final
+    // Limpieza final
     free_ast_node(root_node);
     free_type_table(type_table);
     return 0;

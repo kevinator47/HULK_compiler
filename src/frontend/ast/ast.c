@@ -366,3 +366,16 @@ ASTNode* create_program_node(ASTNode* function_list, ASTNode* type_definitions, 
 
     return (ASTNode*) node;
 }
+
+VariableAssigment* create_variable_assigment(const char* name, const char* static_type, ASTNode* value) {
+    if (!name || !static_type || !value) return NULL;
+
+    VariableAssigment* assignment = malloc(sizeof(VariableAssigment));
+    if (!assignment) return NULL;
+
+    assignment->name = strdup(name);
+    assignment->static_type = strdup(static_type);
+    assignment->value = value;
+
+    return assignment;
+}

@@ -63,6 +63,25 @@ void add_user_defined_type(TypeTable* table, TypeDefinitionNode* type_def_node, 
     }   
 }
 
+void register_builtin_types(TypeTable* type_table) {
+    TypeDescriptor* object_type = create_builtin_type(HULK_Type_Object, "Object", NULL);
+
+    TypeDescriptor* builtins[] = {
+        object_type,
+        create_builtin_type(HULK_Type_Number, "Number", object_type),
+        create_builtin_type(HULK_Type_Boolean, "Bool", object_type),
+        create_builtin_type(HULK_Type_String, "String", object_type),
+        create_builtin_type(HULK_Type_Null, "Null", object_type),
+        create_builtin_type(HULK_Type_Undefined, "Undefined", object_type)
+    };
+
+    int count = sizeof(builtins) / sizeof(builtins[0]);
+    for (int i = 0; i < count; ++i) {
+        add_type(type_table, builtins[i]);
+    }
+}
+
+
 TypeDescriptor* require_type(TypeTable* table, const char* name) {
     TypeDescriptor* td = type_table_lookup(table, name);
     if (!td) {

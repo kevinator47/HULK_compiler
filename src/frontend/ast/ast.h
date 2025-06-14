@@ -215,6 +215,7 @@ ASTNode* create_instanciate_node(char* type_name, ASTNode** args, int arg_count,
 ASTNode* create_func_call_type_node(char* type_name, char* func_name, ASTNode** args, int arg_count, TypeTable* table);
 ASTNode* create_program_node(ASTNode* function_list, ASTNode* type_list, ASTNode *root, TypeTable *table);
 
+VariableAssigment* create_variable_assigment(const char* name, const char* static_type, ASTNode* value);
 ASTNode* append_function_definition_to_list(FunctionDefinitionListNode* list, FunctionDefinitionNode* def);
 
 // Prototipos para imprimir nodos(Debug)

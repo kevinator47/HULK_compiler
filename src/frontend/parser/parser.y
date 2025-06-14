@@ -3,9 +3,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
-#include "../ast/ast.h"
-#include "../common/common.h"
-#include "../hulk_type/type_table.h"
+#include "ast/ast.h"
+#include "common/common.h"
+#include "hulk_type/type_table.h"
 
 extern int yylex();
 void yyerror(const char *s);
@@ -23,8 +23,8 @@ TypeTable *type_table;
     HULK_Op token;
     struct ASTNode* node;
     struct { struct ASTNode** nodes;  int count;} node_list;
-    struct VariableAssigment* var_assig;
-    struct { struct VariableAssigment** list; int count; } var_assig_list;
+    struct VariableAssigmentNode* var_assig_node;
+    struct { struct VariableAssigmentNode** list; int count; } var_assig_node_list;
     struct { char* name; char* type;} param_info;
     struct { char** names ; char** types; int count;} param_list_info;
     struct { char* name; char** param_names; char** param_types; int param_count; char* return_type;} function_header;
@@ -50,8 +50,8 @@ TypeTable *type_table;
 %type<node> IfExpr Else_Elif_Branch FunctionDefList FunctionDefinition FunctionBody TypeDefinition TypeDefinitionBody TypeDefExpr
 %type<node_list> ExpressionList OptionalExpressionList ArgList OptionalArgList OptionalParentArgs TypeExprList 
 %type<type_def_list> TypeDefinitionList
-%type<var_assig> VariableAssigment
-%type<var_assig_list> VariableAssigmentList
+%type<var_assig_node> VariableAssigment
+%type<var_assig_node_list> VariableAssigmentList
 %type<function_header> FunctionHeader
 %type<sval> OptionalType 
 %type<inherit_info>OptionalInherits
@@ -211,7 +211,7 @@ TypeExprList            : /* empty */                    { $$.nodes = NULL; $$.c
                         ;
 
 TypeDefExpr             : FunctionDefinition              {$$ = $1;}
-                        | VariableAssigment SEMICOLON     {$$ = create_variable_assigment_node($1 , type_table);}
+                        | VariableAssigment SEMICOLON     {$$ = (ASTNode*)$1;}
                         ;
 
 Expression              : OrExpr  {$$ = $1;}
@@ -254,15 +254,15 @@ LetInExpr               : LET VariableAssigmentList IN Expression
 
 VariableAssigmentList   : VariableAssigment
                         {
-                            VariableAssigment** list = malloc(sizeof(VariableAssigment*));
-                            list[0] = $1;
+                            VariableAssigmentNode** list = malloc(sizeof(VariableAssigmentNode*));
+                            list[0] = $1; 
                             $$.list = list;
                             $$.count = 1;
                         }
                         | VariableAssigmentList COMMA VariableAssigment
                         {
                             int new_count = $1.count + 1;
-                            VariableAssigment** list = realloc($1.list, new_count * sizeof(VariableAssigment*));
+                            VariableAssigmentNode** list = realloc($1.list, new_count * sizeof(VariableAssigmentNode*));
                             list[new_count - 1] = $3;
                             $$.list = list;
                             $$.count = new_count;
@@ -270,11 +270,9 @@ VariableAssigmentList   : VariableAssigment
                         ;
 
 VariableAssigment       : Parameter ASSIGN Expression    
-                        { VariableAssigment* var = malloc(sizeof(VariableAssigment)); 
-                          var->name = $1.name; 
-                          var->value = $3; 
-                          var->static_type = $1.type;
-                          $$ = var;
+                        { 
+                            VariableAssigment* var = create_variable_assigment($1.name, $1.type, $3);
+                            $$ = (VariableAssigmentNode*)create_variable_assigment_node(var, type_table);
                         }
                         ;
 

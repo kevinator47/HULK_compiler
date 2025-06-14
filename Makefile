@@ -4,18 +4,8 @@ LLVM_CFLAGS := $(shell llvm-config --cflags)
 LLVM_LDFLAGS := $(shell llvm-config --ldflags)
 LLVM_LIBS := $(shell llvm-config --libs core)
 
-CFLAGS = -Wall -Wextra -g \
-	-I./src/frontend \
-	-I./src/backend \
-	-I./src/frontend/common \
-	-I./src/frontend/ast \
-	-I./src/frontend/hulk_type \
-	-I./src/frontend/scope \
-	-I./src/frontend/semantic_check \
-	-I./src/frontend/parser \
-	-I./src/backend/codegen \
-	-I./src/backend/codegen/llvm \
-	$(LLVM_CFLAGS)
+INCLUDE_DIRS := $(shell find src -type d)
+CFLAGS = -Wall -Wextra -g $(addprefix -I, $(INCLUDE_DIRS)) $(LLVM_CFLAGS)
 
 # Archivos fuente
 SRC = src/main.c \

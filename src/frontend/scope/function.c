@@ -94,7 +94,7 @@ void insert_function(char* func_name, FunctionDefinitionNode* node, SymbolTable*
     Symbol* s = malloc(sizeof(Symbol));
     s->name = func_name;
     s->kind = SYMBOL_FUNCTION;
-    s->value = node;
+    s->value = (ASTNode*)node;
     s->type = return_type;
     insert_symbol(global_scope, s);
 }

@@ -186,7 +186,7 @@ TypeDescriptor* check_semantic_variable_assigment_node(VariableAssigmentNode* no
     }
 
     // Asignar tipo dinamico a la variable si no se declaró estáticamente
-    node->base.return_type = static_type ? static_type : dinamyc_type;
+    node->base.return_type = static_type->tag == HULK_Type_Undefined ? dinamyc_type : static_type;
 
     return node->base.return_type;
 }
@@ -209,17 +209,28 @@ TypeDescriptor* check_semantic_reassign_node(ReassignNode* node) {
     // Verificar que la variable ya esté declarada
     Symbol* symbol = lookup_symbol(node->scope, node->name, SYMBOL_ANY, true);
     if (!symbol) {
-        DIE("Reassignment to undeclared variable");
+        printf("Reassignment to undeclared variable '%s'", node->name);
+        exit(1);
     }
-    // ERROR no se puede reinsertar, cambiar esto
-    // Insertar el simbolo con el nuevo valor(sobreescribiendo el valor y tipo de retorno anterior)
-    insert_symbol(node->scope, create_symbol(node->name, symbol->kind, node->value->return_type, node->value));
 
-    // Asignar el tipo de retorno del nodo de reasignación]
+     // Verificar que el símbolo no sea una función ni un tipo
+    if (symbol->kind == SYMBOL_FUNCTION || symbol->kind == SYMBOL_TYPE_METHOD) {
+        printf("Invalid reassignment: '%s' is not a variable", node->name);
+        exit(1);
+    }
+
+    // Verificar que el tipo del nuevo valor sea compatible con el tipo de la variable
+    if (!conforms(node->value->return_type, symbol->type)) {
+        printf("Type mismatch in reassignment to variable '%s': expected '%s', got '%s'", node->name, symbol->type->type_name, node->value->return_type->type_name);
+        exit(1);
+    }
+
+    // Establecer el tipo de retorno del nodo de reasignación
     node->base.return_type = node->value->return_type;
 
     return node->base.return_type;
 }
+
 
 TypeDescriptor* check_semantic_function_definition_node(FunctionDefinitionNode* node, TypeTable* table) {
     // Al ejecutarse esta funcion, se asume que el scope ha sido creado, los parametros agregados y el cuerpo ha sido chequeado semánticamente
@@ -268,7 +279,7 @@ TypeDescriptor* check_semantic_function_call_node(FunctionCallNode* node, Symbol
     
         if(!conforms(arg_type, expected_type))
         {           
-            fprintf(stderr, "Type error in argument %d of function '%s'\n", i, node->name);
+            fprintf(stderr, "Type error in argument %d of function '%s': expected '%s', got '%s'\n", i, node->name, expected_type->type_name, arg_type->type_name);
             exit(1);
         }
     }

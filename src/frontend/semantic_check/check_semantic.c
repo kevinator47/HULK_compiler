@@ -295,35 +295,3 @@ TypeDescriptor* check_semantic_type_definition_node(TypeDefinitionNode* node, Ty
     return type_table_lookup(table, "Null");    
 }
 
-TypeDescriptor* check_semantic_type_instanciate_node(InstanciateNode* node, TypeTable* table) {
-    TypeDescriptor* type = type_table_lookup(table, node->type_name);
-    if (!type)
-    {
-        fprintf(stderr, "The type %s does'nt exists \n", node->type_name);
-        exit(1);
-    }
-    if (type->tag != HULK_Type_UserDefined)
-    {
-        fprintf(stderr, "Error: Cannot instanciate builtin-type \"%s\" \n", type->type_name);
-        exit(1);
-    }
-    if(type->info->param_count != node->arg_count)
-    {
-        fprintf(stderr, "The type %s not wait for %d params \n", type->type_name, node->arg_count);
-        exit(1);
-    }
-
-    for (int i = 0; i < node->arg_count; i++)
-    {
-        TypeDescriptor* arg_type = node->args[i]->return_type;
-        TypeDescriptor* expected_type = lookup_symbol(type->info->scope, type->info->params_name[i], SYMBOL_PARAMETER, false)->type;
-        if (!conforms(arg_type, expected_type))
-        {
-            fprintf(stderr, "Type error in argument %d of instance '%s'\n", i, node->type_name);
-            exit(1);
-        }
-    }
-    node->base.return_type = type;
-    return node->base.return_type;
-}
-

@@ -68,8 +68,12 @@ void print_ast_node(ASTNode *node, int indent) {
             print_type_definition_list_node((TypeDefinitionListNode*)node, indent);
             break;
         }
-        case AST_Node_Instanciate_Type: {
-            print_instanciate_type_node((InstanciateNode*) node, indent);
+        case AST_Node_New: {
+            print_new_node((NewNode*) node, indent);
+            break;
+        }
+        case AST_Node_Attribute_Access: {
+            print_attribute_access_node((AttributeAccessNode*)node, indent);
             break;
         }
         case AST_Node_Program: {
@@ -337,19 +341,41 @@ void print_type_definition_list_node(TypeDefinitionListNode* node, int indent) {
     }
 }
 
-void print_instanciate_type_node(InstanciateNode* node, int indent_level){
-    if(!node) return;
+void print_new_node(NewNode* node, int indent) {
+    if (!node) return;
 
-    print_indent(indent_level);
-    
-    printf("Instance Type %s \n", node->type_name);
-    print_indent(indent_level);
+    print_indent(indent);
+    printf("NewNode:\n");
 
-    printf("Args: %d\n", node->arg_count);
-    
-    for (int i = 0; i < node->arg_count; i++)
-    {
-        print_ast_node(node->args[i], indent_level + 1);
+    print_indent(indent + 1);
+    printf("Type Name: %s\n", node->type_name);
+
+    print_indent(indent + 1);
+    printf("Arguments (%d):\n", node->arg_count);
+    for (int i = 0; i < node->arg_count; i++) {
+        print_ast_node(node->args[i], indent + 2);
+    }
+}
+
+void print_attribute_access_node(AttributeAccessNode* node, int indent) {
+    if (!node) return;
+
+    print_indent(indent);
+    printf("AttributeAccessNode:\n");
+
+    print_indent(indent + 1);
+    printf("Attribute: %s\n", node->attribute_name);
+
+    print_indent(indent + 1);
+    printf("Object:\n");
+    print_ast_node(node->object, indent + 2);
+
+    if (node->is_method_call) {
+        print_indent(indent + 1);
+        printf("Arguments (%d):\n", node->arg_count);
+        for (int i = 0; i < node->arg_count; i++) {
+            print_ast_node(node->args[i], indent + 2);
+        }
     }
 }
 

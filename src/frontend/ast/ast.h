@@ -31,7 +31,6 @@ typedef enum {
     AST_Node_Type_Definition_List,
     AST_Node_New,
     AST_Node_Attribute_Access,
-    AST_Node_Function_Call_Type
 } ASTNodeType;
 
 typedef struct ASTNode {
@@ -186,16 +185,6 @@ typedef struct AttributeAccessNode {
     bool is_method_call;     // true si es una llamada a método
     SymbolTable* scope;      // Scope actual, útil para validar visibilidad
 } AttributeAccessNode;
-
-typedef struct FuntionCallTypeNode{
-    ASTNode base;
-    char* type_name;
-    char* func_name;
-    ASTNode** args;
-    int arg_count;
-    SymbolTable* scope;
-}FuntionCallTypeNode;
-
 typedef struct ProgramNode {
     // Nodo que representa un programa completo
     ASTNode base; // Nodo base del AST
@@ -205,54 +194,55 @@ typedef struct ProgramNode {
 } ProgramNode;
 
 // Prototipos para crear nodos AST
-ASTNode* create_number_literal_node(double value, TypeTable *table);
-ASTNode* create_string_literal_node(char *value, TypeTable *table);
+ASTNode* create_number_literal_node(double value, TypeTable* table);
+ASTNode* create_string_literal_node(char* value, TypeTable* table);
 ASTNode* create_bool_literal_node(int value, TypeTable *table);
-ASTNode* create_unary_operation_node(HULK_Op operator, ASTNode *operand, TypeTable *table);
-ASTNode* create_binary_operation_node(HULK_Op operator, ASTNode *left, ASTNode *right, TypeTable *table);
-ASTNode* create_expression_block_node(ASTNode **expressions, int expression_count, TypeTable *table);
-ASTNode* create_conditional_node(ASTNode *condition, ASTNode *then_branch, ASTNode *else_branch, TypeTable *table);
-ASTNode* create_while_loop_node(ASTNode *condition, ASTNode *body, TypeTable *table); 
+ASTNode* create_unary_operation_node(HULK_Op operator, ASTNode* operand, TypeTable* table);
+ASTNode* create_binary_operation_node(HULK_Op operator, ASTNode* left, ASTNode* right, TypeTable* table);
+ASTNode* create_expression_block_node(ASTNode **expressions, int expression_count, TypeTable* table);
+ASTNode* create_conditional_node(ASTNode* condition, ASTNode* then_branch, ASTNode* else_branch, TypeTable* table);
+ASTNode* create_while_loop_node(ASTNode* condition, ASTNode* body, TypeTable* table); 
 ASTNode* create_let_in_node(VariableAssigmentNode** assigments, int assigment_count, ASTNode* body, TypeTable* table);
-ASTNode* create_variable_node(char *name, TypeTable *table);
+ASTNode* create_variable_node(char* name, TypeTable* table);
 ASTNode* create_variable_assigment_node(VariableAssigment* assigment, TypeTable* table);
-ASTNode* create_reassign_node(char *name, ASTNode *value, TypeTable *table);
+ASTNode* create_reassign_node(char* name, ASTNode* value, TypeTable* table);
 ASTNode* create_function_definition_node(const char* name, char** param_names, char** param_types, int param_count, char* return_type, ASTNode* body, TypeTable* table);
-ASTNode* create_function_definition_list_node(TypeTable *table);
-ASTNode* create_function_call_node(char* name, ASTNode** args, int arg_count, TypeTable *table);
+ASTNode* create_function_definition_list_node(TypeTable* table);
+ASTNode* create_function_call_node(char* name, ASTNode** args, int arg_count, TypeTable* table);
 ASTNode* create_type_definition_node(char* type_name, char** param_names, char** param_types, int param_count, char* parent_name, ASTNode** parent_args, int parent_arg_count, ASTNode* body, TypeTable* table);
 ASTNode* create_type_definition_list_node(TypeDefinitionNode** list, int count, TypeTable* table);
-ASTNode* create_func_call_type_node(char* type_name, char* func_name, ASTNode** args, int arg_count, TypeTable* table);
-ASTNode* create_program_node(ASTNode* function_list, ASTNode* type_list, ASTNode *root, TypeTable *table);
+NewNode* create_new_node(const char* type_name, int arg_count, ASTNode** args, TypeTable* table);
+AttributeAccessNode* create_attribute_access_node(ASTNode* object, const char* attribute_name, ASTNode** args, int arg_count, bool is_method_call, TypeTable* table);
+ASTNode* create_program_node(ASTNode* function_list, ASTNode* type_list, ASTNode* root, TypeTable* table);
 
 VariableAssigment* create_variable_assigment(const char* name, const char* static_type, ASTNode* value);
 ASTNode* append_function_definition_to_list(FunctionDefinitionListNode* list, FunctionDefinitionNode* def);
 
 // Prototipos para imprimir nodos(Debug)
-void print_ast_node(ASTNode *node, int indent_level);
-void print_literal_node(LiteralNode *node, int indent_level);
-void print_unary_operation_node(UnaryOperationNode *node, int indent);
-void print_binary_operation_node(BinaryOperationNode *node, int indent);
-void print_expression_block_node(ExpressionBlockNode *node, int indent_level);
-void print_conditional_node(ConditionalNode *node, int indent_level);
-void print_while_loop_node(WhileLoopNode *node, int indent_level);
-void print_let_in_node(LetInNode *node, int indent_level);
-void print_variable_node(VariableNode *node, int indent_level);
-void print_variable_assigment_node(VariableAssigmentNode*, int indent_level);
-void print_reassign_node(ReassignNode *node, int indent_level);
-void print_function_definition_node(FunctionDefinitionNode *node, int indent_level);
-void print_function_definition_list_node(FunctionDefinitionListNode *node, int indent_level);
+void print_ast_node(ASTNode* node, int indent_level);
+void print_literal_node(LiteralNode* node, int indent_level);
+void print_unary_operation_node(UnaryOperationNode* node, int indent);
+void print_binary_operation_node(BinaryOperationNode* node, int indent);
+void print_expression_block_node(ExpressionBlockNode* node, int indent_level);
+void print_conditional_node(ConditionalNode* node, int indent_level);
+void print_while_loop_node(WhileLoopNode* node, int indent_level);
+void print_let_in_node(LetInNode* node, int indent_level);
+void print_variable_node(VariableNode* node, int indent_level);
+void print_variable_assigment_node(VariableAssigmentNode* node, int indent_level);
+void print_reassign_node(ReassignNode* node, int indent_level);
+void print_function_definition_node(FunctionDefinitionNode* node, int indent_level);
+void print_function_definition_list_node(FunctionDefinitionListNode* node, int indent_level);
 void print_type_definition_node(TypeDefinitionNode* node, int indent_level);
 void print_type_definition_list_node(TypeDefinitionListNode* node, int indent_level);
 void print_function_call_node(FunctionCallNode* node , int indent_level);
-void print_instanciate_type_node(NewNode node, int indent_level);
-void print_func_call_type_node(FuntionCallTypeNode* node, int indent_level);
-void print_program_node(ProgramNode *node, int indent_level);
+void print_new_node(NewNode* node, int indent_level);
+void print_attribute_access_node(AttributeAccessNode* node, int indent);
+void print_program_node(ProgramNode* node, int indent_level);
 void print_indent(int indent);
 
 // Prototipos para liberar nodos AST
 void free_ast_node(ASTNode* node);
-void free_literal_node(LiteralNode *node);
+void free_literal_node(LiteralNode* node);
 void free_unary_operation_node(UnaryOperationNode* node);
 void free_binary_operation_node(BinaryOperationNode* node);
 void free_expression_block_node(ExpressionBlockNode* node);
@@ -267,8 +257,8 @@ void free_function_definition_list_node(FunctionDefinitionListNode* node);
 void free_function_call_node(FunctionCallNode* node);
 void free_type_definition_node(TypeDefinitionNode* node);
 void free_type_definition_list_node(TypeDefinitionListNode* node);
-void free_instanciate_type_node(NewNode* node);
-void free_func_call_type_node(FuntionCallTypeNode* node);
+void free_new_node(NewNode* node);
+void free_attribute_access_node(AttributeAccessNode* node);
 void free_program_node(ProgramNode* node);
 
 #endif // AST_H

@@ -66,6 +66,14 @@ void free_ast_node(ASTNode *node) {
             free_type_definition_list_node((TypeDefinitionListNode*)node);
             break;
         }
+        case AST_Node_New: {
+            free_new_node((NewNode*) node);
+            break;
+        }
+        case AST_Node_Attribute_Access: {
+            free_attribute_access_node((AttributeAccessNode*) node);
+            break;
+        }
         case AST_Node_Program: {
             free_program_node((ProgramNode*) node);
             break;
@@ -276,39 +284,38 @@ void free_type_definition_list_node(TypeDefinitionListNode* node) {
     free(node);
 }
 
-void free_instanciate_type_node(InstanciateNode* node)
-{
-    // Libera la memoria reservada por un nodo Instanciacion de Tipo
+void free_new_node(NewNode* node) {
     if (!node) return;
 
     if (node->type_name) free(node->type_name);
 
-    if (node->args)
-    {
+    if (node->args) {
         for (int i = 0; i < node->arg_count; i++) {
-            free_ast_node(node->args[i]);
+            if (node->args[i]) {
+                free_ast_node(node->args[i]);
+            }
         }
-
         free(node->args);
     }
+
     free(node);
 }
 
-void free_func_call_type_node(FuntionCallTypeNode* node)
-{
-    if(!node) return;
+void free_attribute_access_node(AttributeAccessNode* node) {
+    if (!node) return;
 
-    if(node->type_name) free(node->type_name);
-    if(node->func_name) free(node->func_name);
+    if (node->attribute_name) free(node->attribute_name);
+    if (node->object) free_ast_node(node->object);
 
-    if(node->args)
-    {
-        for (int i = 0; i < node->arg_count; i++)
-        {
-            free_ast_node(node->args[i]);
+    if (node->args) {
+        for (int i = 0; i < node->arg_count; i++) {
+            if (node->args[i]) {
+                free_ast_node(node->args[i]);
+            }
         }
         free(node->args);
     }
+
     free(node);
 }
 

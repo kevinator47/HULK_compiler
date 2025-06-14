@@ -167,18 +167,6 @@ TypeDescriptor* semantic_visit(SemanticVisitor* visitor, ASTNode* node, SymbolTa
         return type_table_lookup(visitor->typeTable, "Null");
         break;
     }
-
-    case AST_Node_Instanciate_Type: {
-        InstanciateNode* instance_node = (InstanciateNode*) node;
-
-        for (int i = 0; i < instance_node->arg_count; i++)
-        {
-            semantic_visit(visitor, instance_node->args[i], current_scope);
-        }
-        return check_semantic_type_instanciate_node(instance_node, visitor->typeTable);
-        break;
-    }
-
     case AST_Node_Program: {
         ProgramNode* program_node = (ProgramNode*) node;
 

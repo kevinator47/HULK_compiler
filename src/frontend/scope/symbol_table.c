@@ -43,7 +43,7 @@ void insert_symbol(SymbolTable* table, Symbol* symbol) {
     if (lookup_symbol(table, symbol->name, symbol->kind, false)) 
     {
         // Lanzar error 
-        fprintf(stderr, "Error[%d]: Redefinition of symbol \"%s\"", symbol->kind, symbol->name);
+        fprintf(stderr, "Error[%d]: Redefinition of symbol \"%s\"\n", symbol->kind, symbol->name);
         exit(1);        
     }
 

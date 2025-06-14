@@ -6,6 +6,7 @@
 #include "frontend/semantic_check/semantic_visitor.h"
 #include "frontend/ast/ast.h"
 #include "../build/parser.tab.h"
+#include "frontend/functions/function.h"
 
 // Declaraciones externas del parser
 extern int yyparse();
@@ -41,7 +42,7 @@ int main(int argc, char **argv) {
     extern FILE* yyin; // Flex usa esta variable para la entrada
     extern ASTNode* root_node;
     SymbolTable* global_scope = create_symbol_table(NULL); // Crear el scope global
-
+    Init_Predefined_Functions(global_scope);
     // 3. Seleccionar fuente de entrada
     if (argc > 1) {
         yyin = fopen(argv[1], "r");

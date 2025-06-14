@@ -333,10 +333,10 @@ NewNode* create_new_node(const char* type_name, int arg_count, ASTNode** args, T
     return node;
 }
 
-AttributeAccessNode* create_attribute_access_node(ASTNode* object, const char* attribute_name, ASTNode** args, int arg_count, bool is_method_call) {
+AttributeAccessNode* create_attribute_access_node(ASTNode* object, const char* attribute_name, ASTNode** args, int arg_count, bool is_method_call, TypeTable* table) {
     AttributeAccessNode* node = malloc(sizeof(AttributeAccessNode));
     node->base.type = AST_Node_Attribute_Access;
-    node->base.return_type = NULL;
+    node->base.return_type = type_table_lookup(table, "Undefined");
     node->base.accept = generic_ast_accept;
 
     node->object = object;
@@ -352,25 +352,6 @@ AttributeAccessNode* create_attribute_access_node(ASTNode* object, const char* a
     return node;
 }
 
-ASTNode* create_func_call_type_node(char* type_name, char* func_name, ASTNode** args, int arg_count, TypeTable* table)
-{
-    FuntionCallTypeNode* node = malloc(sizeof(FunctionCallNode));
-    node->base.type = AST_Node_Function_Call_Type;
-    node->base.accept = generic_ast_accept;
-    node->base.return_type = type_table_lookup(table, "Undefined");
-
-    node->type_name = type_name;
-    node->func_name = func_name;
-    node->arg_count = arg_count;
-    node->args = malloc(sizeof(ASTNode *) * arg_count);
-    for (int i = 0; i < arg_count; i++) {
-        node->args[i] = args[i];
-    }
-    
-    node->scope = NULL;
-
-    return (ASTNode *) node;
-}
 ASTNode* create_program_node(ASTNode* function_list, ASTNode* type_definitions, ASTNode *root, TypeTable *table) {
     ProgramNode *node = malloc(sizeof(ProgramNode));
     if (!node) return NULL;

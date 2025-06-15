@@ -53,6 +53,11 @@ void register_special_functions(SymbolTable* global_scope, TypeTable* type_table
     Param** param = create_predefined_function_params(&name, &type, 1);
     FunctionDefinitionNode* func_exit = create_predefined_function("exit", param, 1, global_scope, NULL, type_table);
     insert_function("exit", func_exit, global_scope, type_table_lookup(type_table, "Null"));
+
+    char* param_print_name = "item";
+    char* param_print_type = "Object";
+    Param** print_param = create_predefined_params(&param_print_name, &param_print_type, 1);
+    FunctionDefinitionNode* func_print = create_predefined_function("print", print_param, 1, global_scope, NULL, type_table);
 }
 
 Param** create_predefined_function_params(char** params_names, char** params_types, int count) {

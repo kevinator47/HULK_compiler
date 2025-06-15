@@ -18,5 +18,8 @@ void define_FunctionBodies_impl(LLVMCodeGenerator* self, FunctionDefinitionListN
 void declare_FunctionHeaders_impl(LLVMCodeGenerator* self, FunctionDefinitionListNode* node);
 LLVMValueRef visit_FunctionDefinition_impl(LLVMCodeGenerator* self, FunctionDefinitionNode* node);
 LLVMValueRef visit_FunctionCall_impl(LLVMCodeGenerator* self, FunctionCallNode* node);
+void declare_method_signature_impl(LLVMCodeGenerator* self, TypeDescriptor* type, FunctionDefinitionNode* fn);
+void define_method_body_impl(LLVMCodeGenerator* self, TypeDescriptor* type, FunctionDefinitionNode* fn);
+LLVMValueRef visit_NewNode_impl(LLVMCodeGenerator* self, NewNode* node);
 
 #endif // LLVM_VISITORS_H

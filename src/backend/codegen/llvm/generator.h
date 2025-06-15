@@ -4,6 +4,7 @@
 #include "../../../frontend/ast/ast.h"
 #include "../../../frontend/common/common.h"
 #include "scope_stack.h"
+#include "type_scope_stack.h"
 #include <llvm-c/Core.h>
 #include <llvm-c/Analysis.h>
 #include <stdio.h>
@@ -18,6 +19,8 @@ struct LLVMCodeGenerator {
     LLVMBuilderRef builder;
     ScopeStack* scope_stack; 
     TypeTable* type_table; // Tabla de tipos para resolver tipos de nodos AST
+    TypeScopeStack* type_scope_stack; // Pila de tipos para manejar el contexto de tipos en la generación de métodos
+    
 
     // Punteros a las implementaciones de visit_ para CADA tipo de nodo AST
     LLVMValueRef (*visit_Literal)(LLVMCodeGenerator* self, LiteralNode* node);
@@ -33,11 +36,17 @@ struct LLVMCodeGenerator {
     LLVMValueRef (*visit_FunctionCall)(LLVMCodeGenerator* self, FunctionCallNode* node);
     void (*declare_FunctionHeaders_impl)(LLVMCodeGenerator* self, FunctionDefinitionListNode* node);
     void (*define_FunctionBodies_impl)(LLVMCodeGenerator* self, FunctionDefinitionListNode* node);
+    void (*declare_method_signature)(LLVMCodeGenerator* self, TypeDescriptor* type, FunctionDefinitionNode* fn);
+    void (*define_method_body)(LLVMCodeGenerator* self, TypeDescriptor* type, FunctionDefinitionNode* fn);
+    LLVMValueRef (*visit_NewNode)(LLVMCodeGenerator* self, NewNode* node);
+
 };
 
 LLVMCodeGenerator* create_llvm_code_generator(const char* module_name, TypeTable* type_table);
 void destroy_llvm_code_generator(LLVMCodeGenerator* generator);
 LLVMModuleRef generate_code(ProgramNode* program, LLVMCodeGenerator* generator);
 void declare_external_functions(LLVMModuleRef module, LLVMContextRef context);
+void declare_user_types_and_methods(LLVMCodeGenerator* generator);
+void define_user_type_methods_and_defaults(LLVMCodeGenerator* generator);
 
 #endif // LLVM_CODEGEN_H

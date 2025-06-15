@@ -22,5 +22,6 @@ typedef enum {
 LLVMTypeRef get_llvm_type_from_descriptor(TypeDescriptor* desc, LLVMCodeGenerator* generator); 
 BuiltinKind get_builtin_kind(const char* name);
 const char* get_print_format(LLVMTypeRef type, LLVMContextRef context);
+bool is_self_instance(char* name);
 
 #endif // UTILS_H

@@ -27,14 +27,23 @@ LLVMValueRef generic_ast_accept(struct ASTNode* self, struct LLVMCodeGenerator* 
                 return visitor->visit_BinaryOp(visitor, (BinaryOperationNode*)self);
             break;
 
-        case AST_Node_While_Loop:
-             if (visitor->visit_WhileLoop)
-                return visitor->visit_WhileLoop(visitor, (WhileLoopNode*)self);
-            break;
-
+        
         case AST_Node_Expression_Block:
+            printf("[generic_ast_accept] AST_Node_Expression_Block\n");
              if (visitor->visit_ExpressionBlock)
                 return visitor->visit_ExpressionBlock(visitor, (ExpressionBlockNode*)self);
+            break;    
+
+         case AST_Node_Conditional:
+             if (visitor->visit_Conditional) {
+                 return visitor->visit_Conditional(visitor, (ConditionalNode*)self); // Implementacion completa
+             }
+            break;
+        
+        case AST_Node_While_Loop:
+            printf("[generic_ast_accept] AST_Node_While_Loop\n");
+             if (visitor->visit_WhileLoop)
+                return visitor->visit_WhileLoop(visitor, (WhileLoopNode*)self);
             break;
 
         case AST_Node_Let_In:
@@ -61,15 +70,15 @@ LLVMValueRef generic_ast_accept(struct ASTNode* self, struct LLVMCodeGenerator* 
              }
             break;
 
-         case AST_Node_Conditional:
-             if (visitor->visit_Conditional) {
-                 return visitor->visit_Conditional(visitor, (ConditionalNode*)self); // Implementacion completa
-             }
-            break;
-
          case AST_Node_Function_Call:
              if (visitor->visit_FunctionCall) {
                 return visitor->visit_FunctionCall(visitor, (FunctionCallNode*)self); // Implementacion completa
+             }
+            break;
+        
+        case AST_Node_New:
+             if (visitor->visit_NewNode) {
+                return visitor->visit_NewNode(visitor, (NewNode*)self); // Implementacion completa
              }
             break;
 

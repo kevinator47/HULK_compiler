@@ -9,7 +9,8 @@ LLVMTypeRef get_llvm_type_from_descriptor(TypeDescriptor* desc, LLVMCodeGenerato
         return NULL;
     }
     printf("[get_llvm_type_from_descriptor] Resolviendo tipo: %s (tag=%d)\n", desc->type_name, desc->tag);
-    if (desc->llvm_type) return desc->llvm_type;
+    if (desc->llvm_type && !(LLVMGetTypeKind(desc->llvm_type) == LLVMStructTypeKind && LLVMIsOpaqueStruct(desc->llvm_type)))
+        return desc->llvm_type;
 
     switch (desc->tag) {
         case HULK_Type_Number:
@@ -22,21 +23,46 @@ LLVMTypeRef get_llvm_type_from_descriptor(TypeDescriptor* desc, LLVMCodeGenerato
             desc->llvm_type = LLVMPointerType(LLVMInt8TypeInContext(generator->context), 0);
             break;
         case HULK_Type_UserDefined: 
-            desc->llvm_type = LLVMStructCreateNamed(generator->context, desc->type_name);
+            // Si no está creado, créalo (opaque por ahora)
+            if (!desc->llvm_type)
+                desc->llvm_type = LLVMStructCreateNamed(generator->context, desc->type_name);
+
+            // Si ya tiene body, retorna
+            if (LLVMGetTypeKind(desc->llvm_type) == LLVMStructTypeKind && !LLVMIsOpaqueStruct(desc->llvm_type))
+                return desc->llvm_type;
+
             TypeInfo* info = desc->info;
-            int n = info->param_count;
-            LLVMTypeRef* members = malloc(sizeof(LLVMTypeRef) * n);
-            for (int i = 0; i < n; ++i) {
-                Symbol* sym = lookup_symbol(info->scope, info->params_name[i], SYMBOL_ANY, true);
-                TypeDescriptor* attr_desc = sym->type;
-                if (!attr_desc) {
-                    fprintf(stderr, "Error: No se encontró el tipo del atributo '%s' en el tipo '%s'.\n", info->params_name[i], desc->type_name);
-                    members[i] = LLVMInt8TypeInContext(generator->context); // fallback
-                } else {
-                    members[i] = get_llvm_type_from_descriptor(attr_desc, generator);
+            SymbolTable* scope = info->scope;
+            int n = 0;
+            for (int i = 0; i < scope->size; ++i) {
+                if (scope->symbols[i]->kind == SYMBOL_TYPE_FIELD && !is_self_instance(scope->symbols[i]->name)) {
+                    n = n + 1;
                 }
             }
+            LLVMTypeRef* members = malloc(sizeof(LLVMTypeRef) * n);
+            int idx = 0;
+            for (int i = 0; i < scope->size; ++i) {
+                if (scope->symbols[i]->kind == SYMBOL_TYPE_FIELD && !is_self_instance(scope->symbols[i]->name)) {
+                    TypeDescriptor* attr_desc = scope->symbols[i]->type;
+                    if (!attr_desc) {
+                        fprintf(stderr, "Error: No se encontró el tipo del atributo '%s' en el tipo '%s'.\n", scope->symbols[i]->name, desc->type_name);
+                        members[idx++] = LLVMInt8TypeInContext(generator->context); // fallback
+                    } else {
+                        members[idx++] = get_llvm_type_from_descriptor(attr_desc, generator);
+                    }
+                }
+            }
+            printf("Antes de LLVMStructSetBody: %s, n=%d\n", desc->type_name, n);
+            for (int i = 0; i < n; ++i) {
+                printf("  Campo %d: tipo LLVM kind = %d\n", i, LLVMGetTypeKind(members[i]));
+            }
             LLVMStructSetBody(desc->llvm_type, members, n, 0);
+            printf("Después de LLVMStructSetBody: %s, kind=%d\n", desc->type_name, LLVMGetTypeKind(desc->llvm_type)); 
+            printf("Definiendo body de %s: desc=%p, llvm_type=%p\n", desc->type_name, (void*)desc, (void*)desc->llvm_type);
+            printf("Struct %s creado con %d campos:\n", desc->type_name, n);
+            for (int i = 0; i < n; ++i) {
+                printf("  Campo %d: tipo LLVM kind = %d\n", i, LLVMGetTypeKind(members[i]));
+            }
             free(members);          
             break;
         
@@ -66,4 +92,8 @@ const char* get_print_format(LLVMTypeRef type, LLVMContextRef context) {
     if (LLVMGetTypeKind(type) == LLVMIntegerTypeKind && LLVMGetIntTypeWidth(type) == 1) return "%s\n";
     if (LLVMGetTypeKind(type) == LLVMPointerTypeKind) return "%s\n";
     return "<unknown>\n";
+}
+
+bool is_self_instance(char* name) {
+    return strcmp(name, "self") == 0 || strcmp(name, "this") == 0;
 }

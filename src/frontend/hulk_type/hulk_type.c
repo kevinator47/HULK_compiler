@@ -1,4 +1,5 @@
 #include "hulk_type.h"
+#include "../ast/ast.h"
 
 TypeDescriptor* create_builtin_type(HULK_Type tag, const char *type_name, TypeDescriptor* parent) {
     // Crea un tipo de dato primitivo del lenguaje HULK.
@@ -11,6 +12,7 @@ TypeDescriptor* create_builtin_type(HULK_Type tag, const char *type_name, TypeDe
     type->parent = parent;
     type->initializated = true;
     type->llvm_type = NULL;
+    type->type_id = 0; 
     return type;
 }
 
@@ -26,10 +28,11 @@ TypeDescriptor* create_user_defined_type(const char *name, TypeInfo* info, TypeD
     type->parent = parent;
     type->initializated = init;    
     type->llvm_type = NULL;  
+    type->type_id = 0;
     return type;
 }
 
-TypeInfo* create_type_info( Param** params, int count, SymbolTable* scope) {
+TypeInfo* create_type_info( Param** params, int count, SymbolTable* scope, TypeDefinitionNode* type_def) {
     TypeInfo* info = malloc(sizeof(TypeInfo));
     if (!info) return NULL;
 
@@ -43,7 +46,7 @@ TypeInfo* create_type_info( Param** params, int count, SymbolTable* scope) {
         info->param_count = 0;
         info->params_name = NULL;
     }
-
+    info->type_def = type_def;
     info->scope = scope;
     return info;
 }

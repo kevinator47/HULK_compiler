@@ -16,6 +16,7 @@ void add_type(TypeTable *table, TypeDescriptor *type) {
         table->capacity *= 2;
         table->types = realloc(table->types, sizeof(TypeDescriptor *) * table->capacity);
     }
+    type->type_id = table->count; // Asignar un ID único al tipo
     table->types[table->count++] = type;
 }
 
@@ -30,7 +31,7 @@ void add_user_defined_type(TypeTable* table, TypeDefinitionNode* type_def_node, 
     SymbolTable* type_scope = create_symbol_table(current_scope);
 
     // Crear TypeInfo con parámetros y el scope creado
-    TypeInfo* info = create_type_info(type_def_node->params, type_def_node->param_count, type_scope);
+    TypeInfo* info = create_type_info(type_def_node->params, type_def_node->param_count, type_scope, type_def_node);
     
     if(!B) 
     {

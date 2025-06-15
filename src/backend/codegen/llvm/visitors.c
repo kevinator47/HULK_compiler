@@ -1,7 +1,10 @@
 #include "visitors.h"
+#include "../../../frontend/hulk_type/type_table.h"
+#include "type_scope_stack.h"
 #include "utils.h"
 #include <stdio.h>
 #include "builtins.h"
+#include <llvm-c/Target.h>
 
 // --- Implementaciones de los métodos visit_ para Expresiones ---
 
@@ -287,21 +290,44 @@ LLVMValueRef visit_Variable_impl(LLVMCodeGenerator* self, VariableNode* node) {
     IrSymbolTable* current = current_scope(self->scope_stack);
     IrSymbol* symbol = lookup_ir_symbol(current, node->name);
 
-    if (!symbol) {
-        fprintf(stderr, "Error: Variable '%s' no encontrada en el ámbito actual.\n", node->name);
-        return NULL;
-    }
-
-    LLVMTypeRef t = LLVMTypeOf(symbol->value);
-
-    if (LLVMGetTypeKind(t) == LLVMPointerTypeKind &&
-        LLVMGetElementType(t) == LLVMInt8TypeInContext(self->context)) {
+    if (symbol) {
+        LLVMTypeRef t = LLVMTypeOf(symbol->value);
+        if (LLVMGetTypeKind(t) == LLVMPointerTypeKind &&
+            LLVMGetElementType(t) == LLVMInt8TypeInContext(self->context)) {
+            return symbol->value;
+        }
+        if (LLVMGetTypeKind(t) == LLVMPointerTypeKind) {
+            return LLVMBuildLoad2(self->builder, LLVMGetElementType(t), symbol->value, node->name);
+        }
         return symbol->value;
     }
-    if (LLVMGetTypeKind(t) == LLVMPointerTypeKind) {
-        return LLVMBuildLoad2(self->builder, LLVMGetElementType(t), symbol->value, node->name);
+
+    // --- Si no está en el scope local, se busca en self (campos del struct) ---
+    IrSymbol* self_symbol = lookup_ir_symbol(current, "self");
+    if (self_symbol) {
+        LLVMValueRef self_ptr = self_symbol->value;
+        TypeDescriptor* type = current_type(self->type_scope_stack);
+        if (!type) {
+            fprintf(stderr, "Error: No hay tipo actual en la pila de tipos para acceder a campos.\n");
+            return NULL;
+        }
+        int field_index = -1;
+        SymbolTable* scope = type->info->scope;
+        for (int i = 0; i < scope->size; ++i) {
+            if (strcmp(scope->symbols[i]->name, node->name) == 0 && scope->symbols[i]->kind != SYMBOL_FUNCTION) {
+                field_index = i;
+                break;
+            }
+        }
+        if (field_index != -1) {
+            LLVMValueRef field_ptr = LLVMBuildStructGEP2(self->builder, type->llvm_type, self_ptr, field_index, node->name);
+            return LLVMBuildLoad2(self->builder, get_llvm_type_from_descriptor(scope->symbols[field_index]->type, self), field_ptr, node->name);
+        }
     }
-    return symbol->value;}
+
+    fprintf(stderr, "Error: Variable o campo '%s' no encontrado en el ámbito actual ni en self.\n", node->name);
+    return NULL;
+}
 
 LLVMValueRef visit_ReassignNode_impl(LLVMCodeGenerator* self, ReassignNode* node){
     IrSymbol* symbol = lookup_ir_symbol(current_scope(self->scope_stack), node->name);
@@ -460,6 +486,76 @@ void declare_FunctionDefinitionList_impl(LLVMCodeGenerator* self, FunctionDefini
     }
 }
 
+void declare_method_signature_impl(LLVMCodeGenerator* self, TypeDescriptor* type, FunctionDefinitionNode* fn) {
+    // El primer parámetro es self (puntero al struct)
+    Symbol* fn_symbol = lookup_symbol(fn->scope, fn->name, SYMBOL_ANY, true);
+    int total_params = fn->param_count + 1;
+    LLVMTypeRef* param_types = malloc(sizeof(LLVMTypeRef) * total_params);
+    param_types[0] = LLVMPointerType(type->llvm_type, 0); // self
+    for (int i = 0; i < fn->param_count; ++i) {
+        Symbol* param_symbol = lookup_symbol(fn->scope, fn->params[i]->name, SYMBOL_ANY, true);
+        param_types[i+1] = get_llvm_type_from_descriptor(param_symbol->type, self);
+    }
+    LLVMTypeRef ret_type = get_llvm_type_from_descriptor(fn_symbol->type, self);
+    char method_name[256];
+    snprintf(method_name, sizeof(method_name), "%s_%s", type->type_name, fn->name);
+    LLVMTypeRef fn_type = LLVMFunctionType(ret_type, param_types, total_params, 0);
+    LLVMAddFunction(self->module, method_name, fn_type);
+    free(param_types);
+}
+
+void define_method_body_impl(LLVMCodeGenerator* self, TypeDescriptor* type, FunctionDefinitionNode* fn) {
+    push_type(self->type_scope_stack, type);
+    char method_name[256];
+    snprintf(method_name, sizeof(method_name), "%s_%s", type->type_name, fn->name);
+    Symbol* fn_symbol = lookup_symbol(fn->scope, fn->name, SYMBOL_ANY, true);
+    LLVMValueRef llvm_fn = LLVMGetNamedFunction(self->module, method_name);
+    if (!llvm_fn) {
+        fprintf(stderr, "Error: método '%s' no declarado.\n", method_name);
+        return;
+    }
+
+    // Prepara el scope para el método
+    IrSymbolTable* method_scope = create_ir_symbol_table(0, current_scope(self->scope_stack));
+    push_scope(self->scope_stack, method_scope);
+
+    LLVMBasicBlockRef entry = LLVMAppendBasicBlockInContext(self->context, llvm_fn, "entry");
+    LLVMPositionBuilderAtEnd(self->builder, entry);    
+
+    // Mapea el parámetro self (primer parámetro del método)
+    LLVMValueRef self_param = LLVMGetParam(llvm_fn, 0);
+    LLVMTypeRef self_type = LLVMPointerType(type->llvm_type, 0);
+    LLVMValueRef self_alloca = LLVMBuildAlloca(self->builder, self_type, "self");
+    LLVMBuildStore(self->builder, self_param, self_alloca);
+    insert_ir_symbol(method_scope, "self", self_alloca);
+
+    // Mapea los parámetros del método (a partir del segundo parámetro)
+    for (int i = 0; i < fn->param_count; ++i) {
+        LLVMValueRef param = LLVMGetParam(llvm_fn, i + 1);
+        Symbol* param_symbol = lookup_symbol(fn->scope, fn->params[i]->name, SYMBOL_ANY, true);
+        LLVMTypeRef param_type = get_llvm_type_from_descriptor(param_symbol->type, self);
+        LLVMValueRef alloca = LLVMBuildAlloca(self->builder, param_type, fn->params[i]->name);
+        LLVMBuildStore(self->builder, param, alloca);
+        insert_ir_symbol(method_scope, fn->params[i]->name, alloca);
+    }
+
+    LLVMValueRef body_val = fn->body->accept(fn->body, self);
+
+    LLVMTypeRef ret_type = get_llvm_type_from_descriptor(fn_symbol->type, self);
+
+    // Retorna el valor adecuado
+    if (ret_type == LLVMVoidTypeInContext(self->context)) {
+        LLVMBuildRetVoid(self->builder);
+    } else if (body_val) {
+        LLVMBuildRet(self->builder, body_val);
+    } else {
+        LLVMBuildRet(self->builder, LLVMConstNull(ret_type));
+    }
+
+    pop_scope(self->scope_stack);
+    pop_type(self->type_scope_stack);
+}
+
 LLVMValueRef visit_FunctionCall_impl(LLVMCodeGenerator* self, FunctionCallNode* node) {
     LLVMValueRef builtin_result = generate_builtin_function(self, node);
     if (builtin_result) return builtin_result;
@@ -485,4 +581,106 @@ LLVMValueRef visit_FunctionCall_impl(LLVMCodeGenerator* self, FunctionCallNode* 
     LLVMValueRef call = LLVMBuildCall2(self->builder, fn_type, fn, args, node->arg_count, "calltmp");
     free(args);
     return call;
+}
+
+LLVMValueRef visit_NewNode_impl(LLVMCodeGenerator* self, NewNode* node) {
+    TypeDescriptor* desc = type_table_lookup(self->type_table, node->type_name);
+    printf("Instanciando: %s, desc=%p, llvm_type=%p, kind=%d\n",
+        desc->type_name, (void*)desc, (void*)desc->llvm_type, LLVMGetTypeKind(desc->llvm_type));
+    if (!desc) {
+        fprintf(stderr, "Error: Tipo '%s' no encontrado en NewNode.\n", node->type_name);
+        return NULL;
+    }
+    if (desc->llvm_type == NULL || !desc->llvm_type) {
+        fprintf(stderr, "Error: Tipo '%s' no tiene un tipo LLVM asociado.\n", node->type_name);
+        return NULL;
+    }
+    printf("Creando instancia de tipo: %s\n", desc->type_name);
+    printf("desc->llvm_type: %p\n", (void*)desc->llvm_type);
+    printf("LLVMGetTypeKind(desc->llvm_type): %d\n", LLVMGetTypeKind(desc->llvm_type));
+    LLVMTypeRef struct_type = desc->llvm_type;
+    LLVMTypeRef i64_type = LLVMInt64TypeInContext(self->context);
+    printf("struct_type: %p\n", (void*)struct_type);
+    if (LLVMGetTypeKind(struct_type) != LLVMStructTypeKind || LLVMCountStructElementTypes(struct_type) == 0) {
+        fprintf(stderr, "Error: struct_type aún no tiene un cuerpo definido.\n");
+        exit(1);
+    }
+    if (LLVMCountStructElementTypes(struct_type) == 0) {
+        fprintf(stderr, "Error: struct_type '%s' está sin definir.\n", desc->type_name);
+        exit(1);
+    }
+    LLVMTargetDataRef data_layout = LLVMGetModuleDataLayout(self->module);
+    if (!data_layout) {
+        fprintf(stderr, "Error: No se pudo obtener el layout de datos del módulo.\n");
+        exit(1);
+    }
+
+    // Obtener tamaño en bytes
+    uint64_t struct_size_bytes = LLVMStoreSizeOfType(data_layout, struct_type);
+
+    // Crear valor LLVM con tamaño
+    LLVMValueRef struct_size = LLVMConstInt(i64_type, struct_size_bytes, 0);    
+    LLVMValueRef malloc_fn = LLVMGetNamedFunction(self->module, "malloc");
+    LLVMValueRef raw_ptr = LLVMBuildCall2(self->builder, LLVMGetElementType(LLVMTypeOf(malloc_fn)), malloc_fn, &struct_size, 1, "malloc_call");
+    LLVMValueRef instance = LLVMBuildBitCast(self->builder, raw_ptr, LLVMPointerType(struct_type, 0), "instance");
+
+    SymbolTable* scope = desc->info->scope;
+    TypeDefinitionNode* type_def = desc->info->type_def;
+    ExpressionBlockNode* body = type_def->body;
+
+    int field_index = 0;
+    for (int i = 0; i < scope->size; ++i) {
+        Symbol* field_sym = scope->symbols[i];
+        if (field_sym->kind != SYMBOL_TYPE_FIELD || is_self_instance(field_sym->name)) continue;
+        char* field_name = field_sym->name;
+        printf("Procesando campo: %s\n", field_name);
+
+        // Busca VariableAssignmentNode para este campo en el body del tipo
+        VariableAssigmentNode* assign_node = NULL;
+        for (int j = 0; j < body->expression_count; ++j) {
+            if (body->expressions[j]->type == AST_Node_Variable_Assigment) {
+                VariableAssigmentNode* va = (VariableAssigmentNode*)body->expressions[j];
+                if (strcmp(va->assigment->name, field_name) == 0) {
+                    assign_node = va;
+                    break;
+                }
+            }
+        }
+        printf("Asignación encontrada: %s\n", assign_node ? "Sí" : "No");
+        LLVMValueRef value_to_store = NULL;
+        if (assign_node) {
+            ASTNode* rhs = assign_node->assigment->value;
+            // Si el valor es un parámetro, usa el argumento recibido
+            if (rhs->type == AST_Node_Variable) {
+                VariableNode* var = (VariableNode*)rhs;
+                int param_index = -1;
+                for (int k = 0; k < type_def->param_count; ++k) {
+                    if (strcmp(type_def->params[k]->name, var->name) == 0) {
+                        param_index = k;
+                        break;
+                    }
+                }
+                if (param_index != -1 && param_index < node->arg_count) {
+                    value_to_store = node->args[param_index]->accept(node->args[param_index], self);
+                } else {
+                    value_to_store = rhs->accept(rhs, self);
+                }
+            } else {
+                value_to_store = rhs->accept(rhs, self);
+            }
+        } else {
+            LLVMTypeRef field_type = get_llvm_type_from_descriptor(field_sym->type, self);
+            value_to_store = LLVMConstNull(field_type);
+        }
+        if (!value_to_store) {
+            fprintf(stderr, "Error: No se pudo generar el valor para el campo '%s'.\n", field_name);
+            continue;
+        }
+
+        LLVMValueRef field_ptr = LLVMBuildStructGEP2(self->builder, struct_type, instance, field_index, field_name);
+        LLVMBuildStore(self->builder, value_to_store, field_ptr);
+        field_index += 1;
+    }
+
+    return instance;
 }

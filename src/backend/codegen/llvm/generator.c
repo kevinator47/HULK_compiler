@@ -1,6 +1,9 @@
 // En codegen/llvm_codegen.c
+#include "../../../frontend/hulk_type/type_table.h"
+#include "../../../frontend/ast/ast.h"
 #include "visitors.h"
 #include "scope_stack.h"
+#include "type_scope_stack.h"
 #include "utils.h"
 #include "../../../frontend/ast/ast.h"
 #include <stdlib.h>
@@ -20,6 +23,7 @@ LLVMCodeGenerator* create_llvm_code_generator(const char* module_name, TypeTable
     generator->module = LLVMModuleCreateWithNameInContext(module_name, generator->context);
     generator->builder = LLVMCreateBuilderInContext(generator->context);
     generator->type_table = type_table;
+    generator->type_scope_stack = create_type_scope_stack();
     
     // Inicializar el stack de ambitos
     generator->scope_stack = create_scope_stack();
@@ -42,6 +46,10 @@ LLVMCodeGenerator* create_llvm_code_generator(const char* module_name, TypeTable
     generator->visit_FunctionCall = visit_FunctionCall_impl;
     generator->declare_FunctionHeaders_impl = declare_FunctionHeaders_impl;
     generator->define_FunctionBodies_impl = define_FunctionBodies_impl;
+    generator->declare_method_signature = declare_method_signature_impl;
+    generator->define_method_body = define_method_body_impl;
+    generator->visit_NewNode = visit_NewNode_impl;
+    //generator->store_field_default = store_field_default_impl;
 
     return generator;
 }
@@ -52,6 +60,10 @@ void destroy_llvm_code_generator(LLVMCodeGenerator* generator) {
     // Destruir el stack de ambitos
     destroy_scope_stack(generator->scope_stack);
 
+    if (generator->type_scope_stack) {
+        free(generator->type_scope_stack->stack);
+        free(generator->type_scope_stack);
+    }
     LLVMDisposeBuilder(generator->builder);
     if (generator->module) {
         LLVMDisposeModule(generator->module);
@@ -73,15 +85,20 @@ LLVMModuleRef generate_code(ProgramNode* program, LLVMCodeGenerator* generator) 
     }
     printf("Declarando funciones externas\n");
     declare_external_functions(generator->module, generator->context);
+    printf("Declarando tipos de usuario y metodos\n");
+    declare_user_types_and_methods(generator);
     printf("Declarando encabezados de funciones\n");
     declare_FunctionHeaders_impl(generator, program->function_list);
+    printf("Definiendo metodos de tipos de usuario y valores por defecto\n");
+    define_user_type_methods_and_defaults(generator);
 
     //Generar el cuerpo de la funcion main
     LLVMTypeRef double_type = LLVMDoubleTypeInContext(generator->context);
     LLVMTypeRef main_fn_type = LLVMFunctionType(get_llvm_type_from_descriptor(program->root->return_type, generator), NULL, 0, 0);
     LLVMValueRef main_fn = LLVMAddFunction(generator->module, "main", main_fn_type);
     LLVMBasicBlockRef entry_block = LLVMAppendBasicBlockInContext(generator->context, main_fn, "entry");
-
+    
+    printf("Definiendo el cuerpo de las funciones\n");
     define_FunctionBodies_impl(generator, program->function_list);
 
     LLVMPositionBuilderAtEnd(generator->builder, entry_block);
@@ -195,5 +212,41 @@ void declare_external_functions(LLVMModuleRef module, LLVMContextRef context) {
         LLVMTypeRef puts_type = LLVMFunctionType(LLVMInt32TypeInContext(context), 
             (LLVMTypeRef[]){LLVMPointerType(LLVMInt8TypeInContext(context), 0)}, 1, 0);
         LLVMAddFunction(module, "puts", puts_type);
+    }
+}
+
+void declare_user_types_and_methods(LLVMCodeGenerator* generator) {
+    for (int i = 0; i < generator->type_table->count; ++i) {
+        TypeDescriptor* desc = generator->type_table->types[i];
+        if (desc->tag == HULK_Type_UserDefined) {
+            // Declara el struct y su layout
+            get_llvm_type_from_descriptor(desc, generator);
+
+            // Declara la firma de los métodos
+            SymbolTable* scope = desc->info->scope; // Asumiendo que tienes esto
+            for (int j = 0; j < scope->size; ++j) {
+                Symbol* sym = scope->symbols[j];
+                if (sym->kind == SYMBOL_FUNCTION) {
+                    generator->declare_method_signature(generator, desc, (FunctionDefinitionNode*)sym->value);
+                }
+            }
+        }
+    }
+}
+
+void define_user_type_methods_and_defaults(LLVMCodeGenerator* generator) {
+    for (int i = 0; i < generator->type_table->count; ++i) {
+        TypeDescriptor* desc = generator->type_table->types[i];
+        if (desc->tag == HULK_Type_UserDefined) {
+            SymbolTable* scope = desc->info->scope;
+            for (int j = 0; j < scope->size; ++j) {
+                Symbol* expr = scope->symbols[j];
+                if (expr->kind == SYMBOL_FUNCTION) {
+                    generator->define_method_body(generator, desc, (FunctionDefinitionNode*)expr);
+                } else if (expr->type == SYMBOL_TYPE_FIELD && !is_self_instance(expr->name)) {
+                    //store_field_default(desc, ( VariableAssigmentNode*)expr);
+                }
+            }
+        }
     }
 }

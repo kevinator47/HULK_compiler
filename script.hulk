@@ -12,6 +12,8 @@ function gcd(a : Number,b : Number): Number {if(a%b == 0) {
                                             }
                                         else gcd(a,a%b);
 }
+function saluda() : Null => print("Saludando"); 
+
 type Point(x : Number, y : Number)
 {
     X : Number = x;
@@ -33,5 +35,6 @@ type Auto(ruedas: Number, marca: String)
     isEven(4);
     gcd(2,2);
     let p : Point = new Point(1,1) in p;
-    let carro : Auto = new Auto(4,"Lambo") in gcd(2,2);
+    let carro : Auto = new Auto(4,"Lambo") in carro;
+    saluda();
 }

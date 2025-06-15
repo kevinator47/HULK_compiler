@@ -33,5 +33,5 @@ type Auto(ruedas: Number, marca: String)
     isEven(4);
     gcd(2,2);
     let p : Point = new Point(1,1) in p;
-    let carro : Auto = new Auto(4,"Lambo") in carro;
+    let carro : Auto = new Auto(4,"Lambo") in gcd(2,2);
 }

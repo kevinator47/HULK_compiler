@@ -278,6 +278,9 @@ LLVMValueRef visit_ExpressionBlock_impl(LLVMCodeGenerator* self, ExpressionBlock
     }
     if (last_val) {
         LLVMTypeRef t = LLVMTypeOf(last_val);
+        if (LLVMGetTypeKind(t) == LLVMVoidTypeKind) {
+            return NULL;
+        }
         if (LLVMGetTypeKind(t) == LLVMPointerTypeKind &&
             LLVMGetElementType(t) != LLVMInt8TypeInContext(self->context)) {
             last_val = LLVMBuildLoad2(self->builder, LLVMGetElementType(t), last_val, "loadtmp");
@@ -360,8 +363,7 @@ LLVMValueRef visit_FunctionDefinition_impl(LLVMCodeGenerator* self, FunctionDefi
         }
         param_types[i] = get_llvm_type_from_descriptor(param_symbol->type, self);
     }
-
-    LLVMTypeRef ret_type = LLVMDoubleTypeInContext(self->context); //tipo correcto
+    Symbol* fn_symbol = lookup_symbol(node->scope, node->name, SYMBOL_ANY, true);
 
     LLVMValueRef fn = LLVMGetNamedFunction(self->module, node->name);
     if (!fn) {
@@ -412,6 +414,7 @@ LLVMValueRef visit_FunctionDefinition_impl(LLVMCodeGenerator* self, FunctionDefi
     LLVMPositionBuilderAtEnd(self->builder, body_bb);
 
     LLVMValueRef body_val = node->body->accept(node->body, self);
+    LLVMTypeRef ret_type = get_llvm_type_from_descriptor(fn_symbol->type, self);
 
     if (ret_type == LLVMVoidTypeInContext(self->context)) {
         LLVMBuildRetVoid(self->builder);
@@ -435,7 +438,7 @@ void declare_FunctionHeaders_impl(LLVMCodeGenerator* self, FunctionDefinitionLis
             fprintf(stderr, "Error: Nodo de función nulo en declare_FunctionHeaders_impl.\n");
             continue;
         }
-        if (fn_node->scope == NULL || fn_node->scope->symbols == NULL || fn_node->param_count <= 0) {
+        if (fn_node->scope == NULL || fn_node->scope->symbols == NULL || fn_node->param_count < 0) {
             fprintf(stderr, "Error: Tipo de scope para la función '%s'.\n", fn_node->name);
             return;
         }
@@ -578,9 +581,16 @@ LLVMValueRef visit_FunctionCall_impl(LLVMCodeGenerator* self, FunctionCallNode* 
         }
     }
     LLVMTypeRef fn_type = LLVMGetElementType(LLVMTypeOf(fn));
-    LLVMValueRef call = LLVMBuildCall2(self->builder, fn_type, fn, args, node->arg_count, "calltmp");
-    free(args);
-    return call;
+    LLVMTypeRef ret_type = LLVMGetReturnType(fn_type);
+    if (ret_type == LLVMVoidTypeInContext(self->context)) {
+        LLVMBuildCall2(self->builder, fn_type, fn, args, node->arg_count, "");
+        free(args);
+        return NULL; // No hay valor de retorno
+    } else {
+        LLVMValueRef call = LLVMBuildCall2(self->builder, fn_type, fn, args, node->arg_count, "calltmp");
+        free(args);
+        return call;
+    }
 }
 
 LLVMValueRef visit_NewNode_impl(LLVMCodeGenerator* self, NewNode* node) {

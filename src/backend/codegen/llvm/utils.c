@@ -13,6 +13,9 @@ LLVMTypeRef get_llvm_type_from_descriptor(TypeDescriptor* desc, LLVMCodeGenerato
         return desc->llvm_type;
 
     switch (desc->tag) {
+        case HULK_Type_Null:
+            desc->llvm_type = LLVMVoidTypeInContext(generator->context);
+            break;
         case HULK_Type_Number:
             desc->llvm_type = LLVMDoubleTypeInContext(generator->context);
             break;

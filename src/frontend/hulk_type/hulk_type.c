@@ -32,15 +32,15 @@ TypeDescriptor* create_user_defined_type(const char *name, TypeInfo* info, TypeD
     return type;
 }
 
-TypeInfo* create_type_info( Param** params, int count, SymbolTable* scope, TypeDefinitionNode* type_def) {
+TypeInfo* create_type_info( TypeDefinitionNode* type_def, SymbolTable* scope ) {
     TypeInfo* info = malloc(sizeof(TypeInfo));
     if (!info) return NULL;
 
-    if (count > 0) {
-        info->param_count = count;
-        info->params_name = malloc(count * sizeof(char*));
-        for (int i = 0; i < count; i++)
-            info->params_name[i] = strdup(params[i]->name);
+    if (type_def->param_count > 0) {
+        info->param_count = type_def->param_count;
+        info->params_name = malloc(type_def->param_count * sizeof(char*));
+        for (int i = 0; i < type_def->param_count; i++)
+            info->params_name[i] = strdup(type_def->params[i]->name);
     } 
     else {
         info->param_count = 0;

@@ -342,15 +342,13 @@ TypeDescriptor* check_semantic_new_node(NewNode* node, TypeTable* type_table) {
 
     if (!type_desc) {
         fprintf(stderr, "Error semántico: Tipo '%s' no encontrado.\n", node->type_name);
-        node->base.return_type = NULL;
-        return NULL;
+        exit(1);
     }
 
     // Verificar que el tipo tenga type_info (es instanciable)
     if (!type_desc->info) {
         fprintf(stderr, "Error semántico: Tipo '%s' no es instanciable (no tiene type_info definido).\n", node->type_name);
-        node->base.return_type = NULL;
-        return NULL;
+        exit(1);
     }
 
     int param_count = type_desc->info->param_count;
@@ -358,9 +356,7 @@ TypeDescriptor* check_semantic_new_node(NewNode* node, TypeTable* type_table) {
 
     // Verificar que el número de argumentos coincida con el número de parámetros del constructor
     if (node->arg_count != param_count) {
-        fprintf(stderr, "Error semántico: Tipo '%s' espera %d argumentos para el constructor, pero se recibieron %d.\n",
-                node->type_name, param_count, node->arg_count);
-        node->base.return_type = NULL;
+        fprintf(stderr, "Error semántico: Tipo '%s' espera %d argumentos para el constructor, pero se recibieron %d.\n", node->type_name, param_count, node->arg_count);
         exit(1);
     }
 

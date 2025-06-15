@@ -70,12 +70,8 @@ void add_user_defined_type(TypeTable* table, TypeDefinitionNode* type_def_node, 
             fprintf(stderr, "Error: Detected redefinition of type \"%s\" \n", type_def_node->type_name);
             exit(1);
         }
-        printf(">> %s\n",type_def_node->type_name);
-        print_info(info);
-        modify_type(A, info, B, true);   // modificar A  para que herede de B
-        printf(">>>>>>>>>>>>>>>>>>>>>>>>>>>\n");
-        print_info(type_table_lookup(table, type_def_node->type_name)->info);
         
+        modify_type(A, info, B, true);   // modificar A  para que herede de B
     }
     else    // si A no se encuentra en la tabla, ingresarlo
     {

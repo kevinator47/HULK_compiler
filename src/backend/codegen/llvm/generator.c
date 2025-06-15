@@ -243,7 +243,7 @@ void define_user_type_methods_and_defaults(LLVMCodeGenerator* generator) {
                 Symbol* expr = scope->symbols[j];
                 if (expr->kind == SYMBOL_FUNCTION) {
                     generator->define_method_body(generator, desc, (FunctionDefinitionNode*)expr);
-                } else if (expr->type == SYMBOL_TYPE_FIELD && !is_self_instance(expr->name)) {
+                } else if (expr->kind == SYMBOL_TYPE_FIELD && !is_self_instance(expr->name)) {
                     //store_field_default(desc, ( VariableAssigmentNode*)expr);
                 }
             }

@@ -292,6 +292,47 @@ TypeDescriptor* check_semantic_function_call_node(FunctionCallNode* node, Symbol
 
 TypeDescriptor* check_semantic_type_definition_node(TypeDefinitionNode* node, TypeTable* table) {
     // TODO : chequear que argumentos del padre coinciden en tipo con sus parametros
+
+    TypeDescriptor* parent_node = type_table_lookup(table,node->parent_name);
+    if(!parent_node)
+    {
+        fprintf(stderr, "Undefined type \"%s\"\n", node->parent_name);
+        exit(1);
+    }
+
+    if(cmp_type(parent_node, type_table_lookup(table, "Object")))
+    {
+        if(node->parent_arg_count != 0)
+        {
+            fprintf(stderr, "Error: Type 'Object' does not accept parameters in its constructor, but %d were provided.\n", node->parent_arg_count);
+            exit(1);
+        }
+    }
+    
+    else
+    {
+        // Verificar que haya la misma cantidad de argumentos que de parametros esperados
+        if(node->parent_arg_count != parent_node->info->param_count)
+        {
+            fprintf(stderr, "Invalid type init, type \"%s\" constructor expects %d parameters but received %d\n", node->parent_name, parent_node->info->param_count, node->parent_arg_count);
+            exit(1);
+        }
+
+        // Verificar que coincidan en tipo
+        for (int i = 0; i < node->parent_arg_count; i++)
+        {
+            TypeDescriptor* arg_type = node->parent_args[i]->return_type;
+            
+            char* param_name = parent_node->info->type_def->params[i]->name;
+            TypeDescriptor* expected_type = lookup_symbol(parent_node->info->scope, param_name, SYMBOL_PARAMETER, false)->type;
+
+            if(!conforms(arg_type, expected_type))
+            {
+                fprintf(stderr, "Error: Type error,\"%s\" type was expecting \"%s\" type for \"%s\", but received \"%s\"\n", node->parent_name, expected_type->type_name, param_name, arg_type->type_name);
+                exit(1);
+            }
+        }
+    }    
     return type_table_lookup(table, "Null");    
 }
 
@@ -320,7 +361,7 @@ TypeDescriptor* check_semantic_new_node(NewNode* node, TypeTable* type_table) {
         fprintf(stderr, "Error semántico: Tipo '%s' espera %d argumentos para el constructor, pero se recibieron %d.\n",
                 node->type_name, param_count, node->arg_count);
         node->base.return_type = NULL;
-        return NULL;
+        exit(1);
     }
 
     // Por cada argumento:
@@ -395,14 +436,25 @@ TypeDescriptor* check_semantic_attribute_access_node(AttributeAccessNode* node) 
     }
     else 
     {
-        Symbol* method_symbol = lookup_symbol(type_scope, node->attribute_name, SYMBOL_TYPE_METHOD, true);
-        
+        // Busca el metodo en el scope del tipo o en el de alguno de sus ancestros
+        Symbol* method_symbol = NULL;
+        TypeDescriptor* current = obj_type;
+        while(!method_symbol)
+        {
+            method_symbol = lookup_symbol(current->info->scope, node->attribute_name, SYMBOL_TYPE_METHOD, false);
+            
+            if(current->parent->tag != HULK_Type_UserDefined)
+                break;
+            
+            current = current->parent;
+            
+        }    
         if (!method_symbol || !method_symbol->value) 
         {
             printf("Semantic Error: Method '%s' not found in type '%s'.\n", node->attribute_name, obj_type->type_name);
             exit(1);
         }
-
+        
         FunctionDefinitionNode* method = (FunctionDefinitionNode*)method_symbol->value;
         
         if (method->param_count != node->arg_count) {

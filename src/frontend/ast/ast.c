@@ -283,6 +283,7 @@ ASTNode* create_type_definition_node(char* type_name, char** param_names, char**
     }
 
     node->parent_arg_count = parent_arg_count;
+
     if(parent_arg_count == 0)
     {
         node->parent_args = NULL;
@@ -331,6 +332,8 @@ ASTNode* create_new_node(const char* type_name, ASTNode** args, int arg_count, T
             node->args[i] = args[i];
         }
     }
+    else
+        node->args = NULL;
     
     return (ASTNode*)node;
 }
@@ -346,10 +349,16 @@ ASTNode* create_attribute_access_node(ASTNode* object, const char* attribute_nam
     node->arg_count = arg_count;
     node->is_method_call = is_method_call;
 
-    for (int i = 0; i < arg_count; i++) {
-        node->args[i] = args[i]; // Copia de los nodos de argumentos
+    if(arg_count > 0)
+    {
+        node->args = malloc(sizeof(ASTNode*) * arg_count); 
+        for (int i = 0; i < arg_count; i++) {
+            node->args[i] = args[i]; // Copia de los nodos de argumentos
+        }
     }
-
+    else
+        node->args = NULL;
+        
     return (ASTNode*)node;
 }
 

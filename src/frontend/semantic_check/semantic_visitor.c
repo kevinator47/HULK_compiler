@@ -146,7 +146,7 @@ TypeDescriptor* semantic_visit(SemanticVisitor* visitor, ASTNode* node, SymbolTa
     }
     case AST_Node_Type_Definition: {
         TypeDefinitionNode* type_node = (TypeDefinitionNode*) node;
-
+        
         // First visit the attribute assigment without self in the scope
         for (int i = 0; i < type_node->body->expression_count; i++) 
         {
@@ -168,6 +168,11 @@ TypeDescriptor* semantic_visit(SemanticVisitor* visitor, ASTNode* node, SymbolTa
                 semantic_visit(visitor, expr, type_node->scope);
         }
 
+        // Finally visit the parent arguments if they exist
+        for (int i = 0; i < type_node->parent_arg_count; i++) {
+            semantic_visit(visitor, type_node->parent_args[i], type_node->scope);
+        }
+        
         return check_semantic_type_definition_node(type_node, visitor->typeTable);
         break;
     }
@@ -177,7 +182,7 @@ TypeDescriptor* semantic_visit(SemanticVisitor* visitor, ASTNode* node, SymbolTa
 
         // Visitar cada definiicion de tipo
         for (int i = 0; i < list_node->count; i++) {
-            semantic_visit(visitor, (ASTNode*) list_node->definitions[i], current_scope);
+            semantic_visit(visitor, (ASTNode*)list_node->definitions[i], current_scope);
         }
 
         return type_table_lookup(visitor->typeTable, "Null");

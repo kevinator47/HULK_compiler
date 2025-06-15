@@ -1,5 +1,4 @@
 #include "semantic_visitor.h"
-
 void register_globals(ProgramNode* node, SymbolTable* current_scope, TypeTable* type_table) {
     register_types(node->type_definitions, current_scope, type_table);
     register_functions(node->function_list, current_scope, type_table);
@@ -9,7 +8,7 @@ void register_types(TypeDefinitionListNode* list, SymbolTable* current_scope, Ty
     // Primera Pasada: agregar los tipos a la tabla de símbolos
     for (int i = 0; i < list->count; i++) {
         TypeDefinitionNode* type_def_node = list->definitions[i];
-        add_user_defined_type(type_table, type_def_node, "Object", current_scope);
+        add_user_defined_type(type_table, type_def_node, current_scope);
     }
 
     // Segunda Pasada: registrar parámetros y campos de cada tipo
@@ -19,6 +18,13 @@ void register_types(TypeDefinitionListNode* list, SymbolTable* current_scope, Ty
         
         if (!descriptor->info || !descriptor->info->scope) {
             fprintf(stderr, "Error interno: El tipo '%s' no tiene información válida (posible error en add_user_defined_type)\n", type_def_node->type_name);
+            exit(1);
+        }
+
+        TypeDescriptor* parent_type = require_type(type_table, type_def_node->parent_name);
+        if(!parent_type->initializated)
+        {
+            fprintf(stderr, "Error: Undeclared type '%s' \n", type_def_node->parent_name);
             exit(1);
         }
 

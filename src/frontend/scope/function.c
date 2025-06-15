@@ -56,7 +56,7 @@ void register_special_functions(SymbolTable* global_scope, TypeTable* type_table
 
     char* param_print_name = "item";
     char* param_print_type = "Object";
-    Param** print_param = create_predefined_params(&param_print_name, &param_print_type, 1);
+    Param** print_param = create_predefined_function_params(&param_print_name, &param_print_type, 1);
     FunctionDefinitionNode* func_print = create_predefined_function("print", print_param, 1, global_scope, NULL, type_table);
     insert_function("print", func_print, global_scope, type_table_lookup(type_table, "Null"));
 }

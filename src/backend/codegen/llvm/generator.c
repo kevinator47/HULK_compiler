@@ -94,7 +94,7 @@ LLVMModuleRef generate_code(ProgramNode* program, LLVMCodeGenerator* generator) 
 
     //Generar el cuerpo de la funcion main
     LLVMTypeRef double_type = LLVMDoubleTypeInContext(generator->context);
-    LLVMTypeRef main_fn_type = LLVMFunctionType(get_llvm_type_from_descriptor(program->root->return_type, generator), NULL, 0, 0);
+    LLVMTypeRef main_fn_type = LLVMFunctionType(LLVMInt32TypeInContext(generator->context), NULL, 0, 0);
     LLVMValueRef main_fn = LLVMAddFunction(generator->module, "main", main_fn_type);
     LLVMBasicBlockRef entry_block = LLVMAppendBasicBlockInContext(generator->context, main_fn, "entry");
     
@@ -112,10 +112,10 @@ LLVMModuleRef generate_code(ProgramNode* program, LLVMCodeGenerator* generator) 
     LLVMValueRef program_result = program->root->accept(program->root, generator);
 
     if (program_result) {
-        LLVMBuildRet(generator->builder, program_result);
+        LLVMBuildRet(generator->builder, LLVMConstInt(LLVMInt32TypeInContext(generator->context), 0, 0));
     } else {
         fprintf(stderr, "Error: El nodo raiz no produjo ningun valor.\n");
-        LLVMBuildRet(generator->builder, LLVMConstReal(double_type, 0.0));
+        LLVMBuildRet(generator->builder, LLVMConstInt(LLVMInt32TypeInContext(generator->context), 0, 0));
     }
 
     // Verificar el modulo generado

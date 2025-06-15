@@ -14,16 +14,24 @@ function gcd(a : Number,b : Number): Number {if(a%b == 0) {
 }
 type Point(x : Number, y : Number)
 {
-    X = x;
-    Y = y;
+    X : Number = x;
+    Y : Number = y;
 
-    getX() => X;
+    getX() : Number => X;
+}
+type Auto(ruedas: Number, marca: String)
+{
+    Ruedas : Number = ruedas;
+    Marca : String = marca;
+
+    getMarcaYRuedas() : String => "Tengo ruedas";
 }
 {
-    let p = new Point(1,2) in print(p.getX());
     gcd(16,10);
     suma(10,2);
     "Hola";
     isEven(4);
-    gcd(2,2)
+    gcd(2,2);
+    let p : Point = new Point(1,1) in p;
+    let carro : Auto = new Auto(4,"Lambo") in carro;
 }

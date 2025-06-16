@@ -39,7 +39,7 @@ struct LLVMCodeGenerator {
     void (*declare_method_signature)(LLVMCodeGenerator* self, TypeDescriptor* type, FunctionDefinitionNode* fn);
     void (*define_method_body)(LLVMCodeGenerator* self, TypeDescriptor* type, FunctionDefinitionNode* fn);
     LLVMValueRef (*visit_NewNode)(LLVMCodeGenerator* self, NewNode* node);
-
+    LLVMValueRef (*visit_AttributeAccessNode)(LLVMCodeGenerator* self, AttributeAccessNode* node);
 };
 
 LLVMCodeGenerator* create_llvm_code_generator(const char* module_name, TypeTable* type_table);

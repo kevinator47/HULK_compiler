@@ -19,14 +19,17 @@ type Point(x : Number, y : Number)
     X : Number = x;
     Y : Number = y;
 
-    getX() : Number => X;
+    getX() : Number {
+        print("Obteniendo X");
+        X;
+    }
 }
 type Auto(ruedas: Number, marca: String)
 {
     Ruedas : Number = ruedas;
     Marca : String = marca;
 
-    getMarcaYRuedas() : String => "Tengo ruedas";
+    getMarcaYRuedas() : Null => print("Tengo ruedas");
 }
 {
     gcd(16,10);
@@ -34,7 +37,6 @@ type Auto(ruedas: Number, marca: String)
     "Hola";
     isEven(4);
     gcd(2,2);
-    let p : Point = new Point(1,1) in p;
-    let carro : Auto = new Auto(4,"Lambo") in carro;
-    saluda();
+    let carro : Auto = new Auto(4,"Lambo") in carro.getMarcaYRuedas();
+    let p : Point = new Point(1,1) in p.getX();
 }

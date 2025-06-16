@@ -81,6 +81,12 @@ LLVMValueRef generic_ast_accept(struct ASTNode* self, struct LLVMCodeGenerator* 
                 return visitor->visit_NewNode(visitor, (NewNode*)self); // Implementacion completa
              }
             break;
+        
+        case AST_Node_Attribute_Access:
+             if (visitor->visit_AttributeAccessNode) {
+                return visitor->visit_AttributeAccessNode(visitor, (AttributeAccessNode*)self); // Implementacion completa
+             }
+            break;
 
         default:
             fprintf(stderr, "Error: Tipo de nodo AST desconocido o no manejado en accept: %d\n", self->type);

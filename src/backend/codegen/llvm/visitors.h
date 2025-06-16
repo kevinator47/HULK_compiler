@@ -21,5 +21,6 @@ LLVMValueRef visit_FunctionCall_impl(LLVMCodeGenerator* self, FunctionCallNode* 
 void declare_method_signature_impl(LLVMCodeGenerator* self, TypeDescriptor* type, FunctionDefinitionNode* fn);
 void define_method_body_impl(LLVMCodeGenerator* self, TypeDescriptor* type, FunctionDefinitionNode* fn);
 LLVMValueRef visit_NewNode_impl(LLVMCodeGenerator* self, NewNode* node);
+LLVMValueRef visit_AttributeAccess_impl(LLVMCodeGenerator* self, AttributeAccessNode* node);
 
 #endif // LLVM_VISITORS_H

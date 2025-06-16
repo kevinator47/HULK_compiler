@@ -315,15 +315,23 @@ LLVMValueRef visit_Variable_impl(LLVMCodeGenerator* self, VariableNode* node) {
             return NULL;
         }
         int field_index = -1;
+        int struct_field_idx = 0;
         SymbolTable* scope = type->info->scope;
         for (int i = 0; i < scope->size; ++i) {
-            if (strcmp(scope->symbols[i]->name, node->name) == 0 && scope->symbols[i]->kind != SYMBOL_FUNCTION) {
-                field_index = i;
-                break;
+            Symbol* sym = scope->symbols[i];
+            if (sym->kind == SYMBOL_TYPE_FIELD) {
+                if (strcmp(sym->name, node->name) == 0) {
+                    field_index = struct_field_idx;
+                    break;
+                }
+                struct_field_idx+=1;
             }
         }
+        printf("DEBUG: type=%p, type->llvm_type=%p, self_ptr=%p, field_index=%d, node->name=%s\n",
+            (void*)type, (void*)type->llvm_type, (void*)self_ptr, field_index, node->name);
         if (field_index != -1) {
-            LLVMValueRef field_ptr = LLVMBuildStructGEP2(self->builder, type->llvm_type, self_ptr, field_index, node->name);
+            LLVMValueRef self_val = LLVMBuildLoad2(self->builder, LLVMPointerType(type->llvm_type, 0), self_ptr, "self_val"); // %Point*
+            LLVMValueRef field_ptr = LLVMBuildStructGEP2(self->builder, type->llvm_type, self_val, field_index, node->name);
             return LLVMBuildLoad2(self->builder, get_llvm_type_from_descriptor(scope->symbols[field_index]->type, self), field_ptr, node->name);
         }
     }
@@ -491,6 +499,7 @@ void declare_FunctionDefinitionList_impl(LLVMCodeGenerator* self, FunctionDefini
 
 void declare_method_signature_impl(LLVMCodeGenerator* self, TypeDescriptor* type, FunctionDefinitionNode* fn) {
     // El primer parámetro es self (puntero al struct)
+    printf("[declare] fn=%p, fn->name='%s'\n", (void*)fn, fn->name ? fn->name : "(null)");
     Symbol* fn_symbol = lookup_symbol(fn->scope, fn->name, SYMBOL_ANY, true);
     int total_params = fn->param_count + 1;
     LLVMTypeRef* param_types = malloc(sizeof(LLVMTypeRef) * total_params);
@@ -502,6 +511,9 @@ void declare_method_signature_impl(LLVMCodeGenerator* self, TypeDescriptor* type
     LLVMTypeRef ret_type = get_llvm_type_from_descriptor(fn_symbol->type, self);
     char method_name[256];
     snprintf(method_name, sizeof(method_name), "%s_%s", type->type_name, fn->name);
+
+    printf("[declare_method_signature_impl] Declarando método: %s\n", method_name);
+
     LLVMTypeRef fn_type = LLVMFunctionType(ret_type, param_types, total_params, 0);
     LLVMAddFunction(self->module, method_name, fn_type);
     free(param_types);
@@ -509,8 +521,12 @@ void declare_method_signature_impl(LLVMCodeGenerator* self, TypeDescriptor* type
 
 void define_method_body_impl(LLVMCodeGenerator* self, TypeDescriptor* type, FunctionDefinitionNode* fn) {
     push_type(self->type_scope_stack, type);
+    printf("[define ] fn=%p, fn->name='%s'\n", (void*)fn, fn->name ? fn->name : "(null)");
     char method_name[256];
     snprintf(method_name, sizeof(method_name), "%s_%s", type->type_name, fn->name);
+
+    printf("[define_method_body_impl] Definiendo método: %s\n", method_name);
+
     Symbol* fn_symbol = lookup_symbol(fn->scope, fn->name, SYMBOL_ANY, true);
     LLVMValueRef llvm_fn = LLVMGetNamedFunction(self->module, method_name);
     if (!llvm_fn) {
@@ -693,4 +709,57 @@ LLVMValueRef visit_NewNode_impl(LLVMCodeGenerator* self, NewNode* node) {
     }
 
     return instance;
+}
+
+LLVMValueRef visit_AttributeAccess_impl(LLVMCodeGenerator* self, AttributeAccessNode* node) {
+    // Evalúa el objeto (instancia)
+    LLVMValueRef obj_val = node->object->accept(node->object, self);
+
+    // Obtén el tipo de la instancia
+    TypeDescriptor* obj_type = node->object->return_type;
+    if (!obj_type || obj_type->tag != HULK_Type_UserDefined) {
+        fprintf(stderr, "Error: acceso a atributo/método en tipo no soportado.\n");
+        return NULL;
+    }
+
+    if (!node->is_method_call) {
+        // --- ACCESO A ATRIBUTO ---
+        // Busca el índice del campo
+        int field_index = -1;
+        SymbolTable* scope = obj_type->info->scope;
+        for (int i = 0, idx = 0; i < scope->size; ++i) {
+            Symbol* sym = scope->symbols[i];
+            if (sym->kind == SYMBOL_TYPE_FIELD && strcmp(sym->name, node->attribute_name) == 0) {
+                field_index = idx;
+                break;
+            }
+            if (sym->kind == SYMBOL_TYPE_FIELD) idx++;
+        }
+        if (field_index == -1) {
+            fprintf(stderr, "Error: atributo '%s' no encontrado en tipo '%s'.\n", node->attribute_name, obj_type->type_name);
+            return NULL;
+        }
+        LLVMValueRef gep = LLVMBuildStructGEP2(self->builder, obj_type->llvm_type, obj_val, field_index, node->attribute_name);
+        return LLVMBuildLoad2(self->builder, get_llvm_type_from_descriptor(scope->symbols[field_index]->type, self), gep, "");
+    } else {
+        // --- LLAMADA A MÉTODO ---
+        // Construye el nombre del método
+        char method_name[256];
+        snprintf(method_name, sizeof(method_name), "%s_%s", obj_type->type_name, node->attribute_name);
+        LLVMValueRef fn = LLVMGetNamedFunction(self->module, method_name);
+        if (!fn) {
+            fprintf(stderr, "Error: método '%s' no encontrado en tipo '%s'.\n", node->attribute_name, obj_type->type_name);
+            return NULL;
+        }
+        LLVMTypeRef fn_type = LLVMGetElementType(LLVMTypeOf(fn));
+        int total_args = node->arg_count + 1;
+        LLVMValueRef* args = malloc(sizeof(LLVMValueRef) * total_args);
+        args[0] = obj_val; // self
+        for (int i = 0; i < node->arg_count; ++i) {
+            args[i+1] = node->args[i]->accept(node->args[i], self);
+        }
+        LLVMValueRef call = LLVMBuildCall2(self->builder, fn_type, fn, args, total_args, "");
+        free(args);
+        return call;
+    }
 }

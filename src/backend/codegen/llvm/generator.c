@@ -49,6 +49,7 @@ LLVMCodeGenerator* create_llvm_code_generator(const char* module_name, TypeTable
     generator->declare_method_signature = declare_method_signature_impl;
     generator->define_method_body = define_method_body_impl;
     generator->visit_NewNode = visit_NewNode_impl;
+    generator->visit_AttributeAccessNode = visit_AttributeAccess_impl;
     //generator->store_field_default = store_field_default_impl;
 
     return generator;
@@ -226,7 +227,9 @@ void declare_user_types_and_methods(LLVMCodeGenerator* generator) {
             SymbolTable* scope = desc->info->scope; // Asumiendo que tienes esto
             for (int j = 0; j < scope->size; ++j) {
                 Symbol* sym = scope->symbols[j];
-                if (sym->kind == SYMBOL_FUNCTION) {
+                if (sym->kind == SYMBOL_TYPE_METHOD) {
+                    printf("[declare_user_types_and_methods] Declarando método: %s_%s\n", desc->type_name, sym->name);
+
                     generator->declare_method_signature(generator, desc, (FunctionDefinitionNode*)sym->value);
                 }
             }
@@ -238,12 +241,14 @@ void define_user_type_methods_and_defaults(LLVMCodeGenerator* generator) {
     for (int i = 0; i < generator->type_table->count; ++i) {
         TypeDescriptor* desc = generator->type_table->types[i];
         if (desc->tag == HULK_Type_UserDefined) {
+            printf("[define_user_type_methods_and_defaults] Tipo: %s\n", desc->type_name);
             SymbolTable* scope = desc->info->scope;
             for (int j = 0; j < scope->size; ++j) {
-                Symbol* expr = scope->symbols[j];
-                if (expr->kind == SYMBOL_FUNCTION) {
-                    generator->define_method_body(generator, desc, (FunctionDefinitionNode*)expr);
-                } else if (expr->kind == SYMBOL_TYPE_FIELD && !is_self_instance(expr->name)) {
+                Symbol* sym = scope->symbols[j];
+                if (sym->kind == SYMBOL_TYPE_METHOD) {
+                    printf("  Definiendo método: %s_%s\n", desc->type_name, sym->name);
+                    generator->define_method_body(generator, desc, (FunctionDefinitionNode*)sym->value);
+                } else if (sym->kind == SYMBOL_TYPE_FIELD && !is_self_instance(sym->name)) {
                     //store_field_default(desc, ( VariableAssigmentNode*)expr);
                 }
             }

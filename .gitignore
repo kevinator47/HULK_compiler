@@ -37,3 +37,11 @@
 /.vscode/
 /build/
 /hulk/
+
+# Latex
+*.aux
+*.fdb_latexmk
+*.fls
+*.log
+*.out
+*.gz

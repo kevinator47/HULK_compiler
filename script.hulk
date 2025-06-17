@@ -21,22 +21,21 @@ type Point(x : Number, y : Number)
 
     getX() : Number {
         print("Obteniendo X");
+        print(X);
         X;
     }
 }
-type Auto(ruedas: Number, marca: String)
-{
-    Ruedas : Number = ruedas;
-    Marca : String = marca;
 
-    getMarcaYRuedas() : Null => print("Tengo ruedas");
+type PolarPoint inherits Point (2,3){
+    saluda() : Null => print("Hola");
+    getY() : Number => self.getX();
 }
+
 {
     gcd(16,10);
     suma(10,2);
     "Hola";
     isEven(4);
     gcd(2,2);
-    let carro : Auto = new Auto(4,"Lambo") in carro.getMarcaYRuedas();
-    let p : Point = new Point(1,1) in p.getX();
+    let p : PolarPoint = new PolarPoint() in p.getY();
 }

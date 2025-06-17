@@ -36,14 +36,32 @@ LLVMTypeRef get_llvm_type_from_descriptor(TypeDescriptor* desc, LLVMCodeGenerato
 
             TypeInfo* info = desc->info;
             SymbolTable* scope = info->scope;
-            int n = 0;
+
+            int n_fields = 1;
+            // Si tiene padre, añade puntero al padre como segundo campo
+            int has_parent = (desc->parent && desc->parent != desc && desc->parent->type_id != 0); // Que tenga padre pero que no sea object_type
+            if (has_parent) n_fields+=1;
+
+            int n_own = 0;
             for (int i = 0; i < scope->size; ++i) {
                 if (scope->symbols[i]->kind == SYMBOL_TYPE_FIELD && !is_self_instance(scope->symbols[i]->name)) {
-                    n = n + 1;
+                    n_own = n_own + 1;
                 }
             }
-            LLVMTypeRef* members = malloc(sizeof(LLVMTypeRef) * n);
+            n_fields += n_own;
+
+            LLVMTypeRef* members = malloc(sizeof(LLVMTypeRef) * n_fields);
             int idx = 0;
+            
+            // typeid (int32)
+            members[idx++] = LLVMInt32TypeInContext(generator->context);
+
+            // puntero al padre si hay herencia
+            if (has_parent) {
+                LLVMTypeRef parent_type = get_llvm_type_from_descriptor(desc->parent, generator);
+                members[idx++] = LLVMPointerType(parent_type, 0);
+            }
+
             for (int i = 0; i < scope->size; ++i) {
                 if (scope->symbols[i]->kind == SYMBOL_TYPE_FIELD && !is_self_instance(scope->symbols[i]->name)) {
                     TypeDescriptor* attr_desc = scope->symbols[i]->type;
@@ -55,15 +73,15 @@ LLVMTypeRef get_llvm_type_from_descriptor(TypeDescriptor* desc, LLVMCodeGenerato
                     }
                 }
             }
-            printf("Antes de LLVMStructSetBody: %s, n=%d\n", desc->type_name, n);
-            for (int i = 0; i < n; ++i) {
+            printf("Antes de LLVMStructSetBody: %s, n=%d\n", desc->type_name, n_fields);
+            for (int i = 0; i < n_fields; ++i) {
                 printf("  Campo %d: tipo LLVM kind = %d\n", i, LLVMGetTypeKind(members[i]));
             }
-            LLVMStructSetBody(desc->llvm_type, members, n, 0);
+            LLVMStructSetBody(desc->llvm_type, members, n_fields, 0);
             printf("Después de LLVMStructSetBody: %s, kind=%d\n", desc->type_name, LLVMGetTypeKind(desc->llvm_type)); 
             printf("Definiendo body de %s: desc=%p, llvm_type=%p\n", desc->type_name, (void*)desc, (void*)desc->llvm_type);
-            printf("Struct %s creado con %d campos:\n", desc->type_name, n);
-            for (int i = 0; i < n; ++i) {
+            printf("Struct %s creado con %d campos:\n", desc->type_name, n_fields);
+            for (int i = 0; i < n_fields; ++i) {
                 printf("  Campo %d: tipo LLVM kind = %d\n", i, LLVMGetTypeKind(members[i]));
             }
             free(members);          

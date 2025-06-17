@@ -4,6 +4,7 @@
 #include "utils.h"
 #include <stdio.h>
 #include "builtins.h"
+#include "../ast_accept.h"
 #include <llvm-c/Target.h>
 
 // --- Implementaciones de los métodos visit_ para Expresiones ---
@@ -289,6 +290,37 @@ LLVMValueRef visit_ExpressionBlock_impl(LLVMCodeGenerator* self, ExpressionBlock
     return last_val;
 }
 
+int count_fields_to_skip(TypeDescriptor* type)
+{
+    return (type->parent && type->parent != type && type->parent->type_id != 0 ? 2 : 1);
+}
+
+// Devuelve el número de saltos de parent y el índice del campo en ese struct
+bool find_field_in_hierarchy(TypeDescriptor* type, const char* field_name, int* out_parent_hops, int* out_field_index, LLVMCodeGenerator* self) {
+    int hops = 0;
+    while (type) {
+        SymbolTable* scope = type->info->scope;
+        int idx = 0;
+        // Salta typeid y parent
+        for (int i = 0; i < scope->size; ++i) {
+            Symbol* sym = scope->symbols[i];
+            if (sym->kind == SYMBOL_TYPE_FIELD && !is_self_instance(sym->name)) {
+                if (strcmp(sym->name, field_name) == 0) {
+                    *out_parent_hops = hops;
+                    *out_field_index = idx + count_fields_to_skip(type); // 0:typeid, 1:parent, 2...:campos
+                    return true;
+                }
+                idx++;
+            }
+        }
+        if (type->parent && type->parent != type && type->parent->type_id != 0)
+            type = type->parent, hops++;
+        else
+            break;
+    }
+    return false;
+}
+
 LLVMValueRef visit_Variable_impl(LLVMCodeGenerator* self, VariableNode* node) {
     IrSymbolTable* current = current_scope(self->scope_stack);
     IrSymbol* symbol = lookup_ir_symbol(current, node->name);
@@ -314,26 +346,31 @@ LLVMValueRef visit_Variable_impl(LLVMCodeGenerator* self, VariableNode* node) {
             fprintf(stderr, "Error: No hay tipo actual en la pila de tipos para acceder a campos.\n");
             return NULL;
         }
-        int field_index = -1;
-        int struct_field_idx = 0;
+        int parent_hops = 0, field_index = -1;
+        if (!find_field_in_hierarchy(type, node->name, &parent_hops, &field_index, self)) {
+            fprintf(stderr, "Error: Campo '%s' no encontrado en la jerarquía de '%s'.\n", node->name, type->type_name);
+            return NULL;
+        }
+        LLVMValueRef cur_ptr = LLVMBuildLoad2(self->builder, LLVMPointerType(type->llvm_type, 0), self_ptr, "self_val");
+        for (int h = 0; h < parent_hops; ++h) {
+            LLVMValueRef parent_ptr = LLVMBuildStructGEP2(self->builder, type->llvm_type, cur_ptr, 1, "parent");
+            cur_ptr = LLVMBuildLoad2(self->builder, LLVMPointerType(type->parent->llvm_type, 0), parent_ptr, "parent_val");
+            type = type->parent;
+        }
+        LLVMValueRef field_ptr = LLVMBuildStructGEP2(self->builder, type->llvm_type, cur_ptr, field_index, node->name);
         SymbolTable* scope = type->info->scope;
-        for (int i = 0; i < scope->size; ++i) {
+        Symbol* field_sym = NULL;
+        for (int i = 0, idx = 0; i < scope->size; ++i) {
             Symbol* sym = scope->symbols[i];
-            if (sym->kind == SYMBOL_TYPE_FIELD) {
+            if (sym->kind == SYMBOL_TYPE_FIELD && !is_self_instance(sym->name)) {
                 if (strcmp(sym->name, node->name) == 0) {
-                    field_index = struct_field_idx;
+                    field_sym = sym;
                     break;
                 }
-                struct_field_idx+=1;
+                idx++;
             }
         }
-        printf("DEBUG: type=%p, type->llvm_type=%p, self_ptr=%p, field_index=%d, node->name=%s\n",
-            (void*)type, (void*)type->llvm_type, (void*)self_ptr, field_index, node->name);
-        if (field_index != -1) {
-            LLVMValueRef self_val = LLVMBuildLoad2(self->builder, LLVMPointerType(type->llvm_type, 0), self_ptr, "self_val"); // %Point*
-            LLVMValueRef field_ptr = LLVMBuildStructGEP2(self->builder, type->llvm_type, self_val, field_index, node->name);
-            return LLVMBuildLoad2(self->builder, get_llvm_type_from_descriptor(scope->symbols[field_index]->type, self), field_ptr, node->name);
-        }
+        return LLVMBuildLoad2(self->builder, get_llvm_type_from_descriptor(field_sym->type, self), field_ptr, node->name);
     }
 
     fprintf(stderr, "Error: Variable o campo '%s' no encontrado en el ámbito actual ni en self.\n", node->name);
@@ -609,6 +646,48 @@ LLVMValueRef visit_FunctionCall_impl(LLVMCodeGenerator* self, FunctionCallNode* 
     }
 }
 
+LLVMValueRef initialize_parent(LLVMCodeGenerator* self, TypeDescriptor* parent_type, ASTNode** parent_args, int parent_arg_count) {
+    if (!parent_type || !parent_type->llvm_type) {
+        fprintf(stderr, "Error: Tipo padre no válido para inicialización.\n");
+        return NULL;
+    }
+    if (parent_arg_count > 0 && parent_args == NULL) {
+        fprintf(stderr, "Error: Se especificaron argumentos para el padre, pero no se proporcionaron.\n");
+        return NULL;
+    }
+
+    NewNode* new_node = (NewNode*)calloc(1, sizeof(NewNode));
+    new_node->base.type = AST_Node_New;
+    new_node->base.accept = generic_ast_accept;
+    new_node->type_name = parent_type->type_name;
+    new_node->arg_count = parent_arg_count;
+    new_node->base.return_type = parent_type;
+
+    if (parent_arg_count > 0) {
+        new_node->args = malloc(sizeof(ASTNode*) * parent_arg_count);
+        for (int i = 0; i < parent_arg_count; i++) {
+            new_node->args[i] = parent_args[i];
+        }
+    } else {
+        new_node->args = NULL;
+    }
+
+    LLVMValueRef result = new_node->base.accept((ASTNode*)new_node, self);
+    
+    if (!result) {
+        fprintf(stderr, "Error: No se pudo inicializar el tipo padre '%s'.\n", parent_type->type_name);
+        free(new_node->args);
+        free(new_node);
+        return NULL;
+    }
+    printf("Tipo padre '%s' inicializado correctamente.\n", parent_type->type_name);
+    
+    if(new_node->args) free(new_node->args);
+    free(new_node);
+    
+    return result;
+}
+
 LLVMValueRef visit_NewNode_impl(LLVMCodeGenerator* self, NewNode* node) {
     TypeDescriptor* desc = type_table_lookup(self->type_table, node->type_name);
     printf("Instanciando: %s, desc=%p, llvm_type=%p, kind=%d\n",
@@ -641,7 +720,6 @@ LLVMValueRef visit_NewNode_impl(LLVMCodeGenerator* self, NewNode* node) {
         exit(1);
     }
 
-    // Obtener tamaño en bytes
     uint64_t struct_size_bytes = LLVMStoreSizeOfType(data_layout, struct_type);
 
     // Crear valor LLVM con tamaño
@@ -655,13 +733,24 @@ LLVMValueRef visit_NewNode_impl(LLVMCodeGenerator* self, NewNode* node) {
     ExpressionBlockNode* body = type_def->body;
 
     int field_index = 0;
+
+    LLVMValueRef typeid_val = LLVMConstInt(LLVMInt32TypeInContext(self->context), desc->type_id, 0);
+    LLVMValueRef typeid_ptr = LLVMBuildStructGEP2(self->builder, struct_type, instance, field_index++, "typeid");
+    LLVMBuildStore(self->builder, typeid_val, typeid_ptr);
+
+    if (desc->parent && desc->parent != desc && desc->parent->type_id != 0) {
+        LLVMValueRef parent_instance = initialize_parent(self, desc->parent, type_def->parent_args, type_def->parent_arg_count);
+        LLVMValueRef parent_ptr = LLVMBuildStructGEP2(self->builder, struct_type, instance, field_index++, "parent");
+        LLVMBuildStore(self->builder, parent_instance, parent_ptr);
+    }
+
     for (int i = 0; i < scope->size; ++i) {
         Symbol* field_sym = scope->symbols[i];
         if (field_sym->kind != SYMBOL_TYPE_FIELD || is_self_instance(field_sym->name)) continue;
         char* field_name = field_sym->name;
         printf("Procesando campo: %s\n", field_name);
 
-        // Busca VariableAssignmentNode para este campo en el body del tipo
+        // Buscar asignación para ese campo en el cuerpo de la definición
         VariableAssigmentNode* assign_node = NULL;
         for (int j = 0; j < body->expression_count; ++j) {
             if (body->expressions[j]->type == AST_Node_Variable_Assigment) {
@@ -676,7 +765,7 @@ LLVMValueRef visit_NewNode_impl(LLVMCodeGenerator* self, NewNode* node) {
         LLVMValueRef value_to_store = NULL;
         if (assign_node) {
             ASTNode* rhs = assign_node->assigment->value;
-            // Si el valor es un parámetro, usa el argumento recibido
+            // Si el valor es un parámetro,se usa el argumento recibido
             if (rhs->type == AST_Node_Variable) {
                 VariableNode* var = (VariableNode*)rhs;
                 int param_index = -1;
@@ -712,10 +801,7 @@ LLVMValueRef visit_NewNode_impl(LLVMCodeGenerator* self, NewNode* node) {
 }
 
 LLVMValueRef visit_AttributeAccess_impl(LLVMCodeGenerator* self, AttributeAccessNode* node) {
-    // Evalúa el objeto (instancia)
     LLVMValueRef obj_val = node->object->accept(node->object, self);
-
-    // Obtén el tipo de la instancia
     TypeDescriptor* obj_type = node->object->return_type;
     if (!obj_type || obj_type->tag != HULK_Type_UserDefined) {
         fprintf(stderr, "Error: acceso a atributo/método en tipo no soportado.\n");
@@ -723,43 +809,61 @@ LLVMValueRef visit_AttributeAccess_impl(LLVMCodeGenerator* self, AttributeAccess
     }
 
     if (!node->is_method_call) {
-        // --- ACCESO A ATRIBUTO ---
-        // Busca el índice del campo
-        int field_index = -1;
+        int parent_hops = 0, field_index = -1;
+        if (!find_field_in_hierarchy(obj_type, node->attribute_name, &parent_hops, &field_index, self)) {
+            fprintf(stderr, "Error: atributo '%s' no encontrado en la jerarquía de '%s'.\n", node->attribute_name, obj_type->type_name);
+            return NULL;
+        }
+        LLVMValueRef cur_ptr = obj_val;
+        for (int h = 0; h < parent_hops; ++h) {
+            LLVMValueRef parent_ptr = LLVMBuildStructGEP2(self->builder, obj_type->llvm_type, cur_ptr, 1, "parent");
+            cur_ptr = LLVMBuildLoad2(self->builder, LLVMPointerType(obj_type->parent->llvm_type, 0), parent_ptr, "parent_val");
+            obj_type = obj_type->parent;
+        }
+        LLVMValueRef field_ptr = LLVMBuildStructGEP2(self->builder, obj_type->llvm_type, cur_ptr, field_index, node->attribute_name);
         SymbolTable* scope = obj_type->info->scope;
+        Symbol* field_sym = NULL;
         for (int i = 0, idx = 0; i < scope->size; ++i) {
             Symbol* sym = scope->symbols[i];
-            if (sym->kind == SYMBOL_TYPE_FIELD && strcmp(sym->name, node->attribute_name) == 0) {
-                field_index = idx;
+            if (sym->kind == SYMBOL_TYPE_FIELD && !is_self_instance(sym->name)) {
+                if (strcmp(sym->name, node->attribute_name) == 0) {
+                    field_sym = sym;
+                    break;
+                }
+                idx++;
+            }
+        }
+        return LLVMBuildLoad2(self->builder, get_llvm_type_from_descriptor(field_sym->type, self), field_ptr, node->attribute_name);
+    } else {
+        // si no está en tipo actual,se busca en el padre
+        TypeDescriptor* search_type = obj_type;
+        LLVMValueRef cur_obj = obj_val;
+        while (search_type) {
+            char method_name[256];
+            snprintf(method_name, sizeof(method_name), "%s_%s", search_type->type_name, node->attribute_name);
+            LLVMValueRef fn = LLVMGetNamedFunction(self->module, method_name);
+            if (fn) {
+                LLVMTypeRef fn_type = LLVMGetElementType(LLVMTypeOf(fn));
+                int total_args = node->arg_count + 1;
+                LLVMValueRef* args = malloc(sizeof(LLVMValueRef) * total_args);
+                args[0] = cur_obj; // self
+                for (int i = 0; i < node->arg_count; ++i) {
+                    args[i+1] = node->args[i]->accept(node->args[i], self);
+                }
+                LLVMValueRef call = LLVMBuildCall2(self->builder, fn_type, fn, args, total_args, "");
+                free(args);
+                return call;
+            }
+            // Si no está, se sube al padre
+            if (search_type->parent && search_type->parent != search_type) {
+                LLVMValueRef parent_ptr = LLVMBuildStructGEP2(self->builder, search_type->llvm_type, cur_obj, 1, "parent");
+                cur_obj = LLVMBuildLoad2(self->builder, LLVMPointerType(search_type->parent->llvm_type, 0), parent_ptr, "parent_val");
+                search_type = search_type->parent;
+            } else {
                 break;
             }
-            if (sym->kind == SYMBOL_TYPE_FIELD) idx++;
         }
-        if (field_index == -1) {
-            fprintf(stderr, "Error: atributo '%s' no encontrado en tipo '%s'.\n", node->attribute_name, obj_type->type_name);
-            return NULL;
-        }
-        LLVMValueRef gep = LLVMBuildStructGEP2(self->builder, obj_type->llvm_type, obj_val, field_index, node->attribute_name);
-        return LLVMBuildLoad2(self->builder, get_llvm_type_from_descriptor(scope->symbols[field_index]->type, self), gep, "");
-    } else {
-        // --- LLAMADA A MÉTODO ---
-        // Construye el nombre del método
-        char method_name[256];
-        snprintf(method_name, sizeof(method_name), "%s_%s", obj_type->type_name, node->attribute_name);
-        LLVMValueRef fn = LLVMGetNamedFunction(self->module, method_name);
-        if (!fn) {
-            fprintf(stderr, "Error: método '%s' no encontrado en tipo '%s'.\n", node->attribute_name, obj_type->type_name);
-            return NULL;
-        }
-        LLVMTypeRef fn_type = LLVMGetElementType(LLVMTypeOf(fn));
-        int total_args = node->arg_count + 1;
-        LLVMValueRef* args = malloc(sizeof(LLVMValueRef) * total_args);
-        args[0] = obj_val; // self
-        for (int i = 0; i < node->arg_count; ++i) {
-            args[i+1] = node->args[i]->accept(node->args[i], self);
-        }
-        LLVMValueRef call = LLVMBuildCall2(self->builder, fn_type, fn, args, total_args, "");
-        free(args);
-        return call;
+        fprintf(stderr, "Error: método '%s' no encontrado en la jerarquía de '%s'.\n", node->attribute_name, obj_type->type_name);
+        return NULL;
     }
 }

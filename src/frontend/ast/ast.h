@@ -38,6 +38,8 @@ typedef struct ASTNode {
     ASTNodeType type;            // Tipo de nodo AST
     TypeDescriptor* return_type; // Tipo de retorno del nodo AST
     LLVMValueRef (*accept)(struct ASTNode* self, struct LLVMCodeGenerator* visitor);
+    int line;
+    char* line_text;
 } ASTNode;
 
 typedef struct LiteralNode {
@@ -194,6 +196,7 @@ typedef struct ProgramNode {
 } ProgramNode;
 
 // Prototipos para crear nodos AST
+void create_ast_base(ASTNode* base, ASTNodeType type, TypeDescriptor* return_type);
 ASTNode* create_number_literal_node(double value, TypeTable* table);
 ASTNode* create_string_literal_node(char* value, TypeTable* table);
 ASTNode* create_bool_literal_node(int value, TypeTable *table);

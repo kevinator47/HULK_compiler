@@ -9,10 +9,6 @@
 #include "scope/function.h"
 #include "../build/parser.tab.h"
 
-// Declaraciones externas del parser
-extern int yyparse();
-extern FILE* yyin; // Flex usa esta variable para la entrada
-extern ASTNode* root_node;
 
 int main(int argc, char **argv) {
     
@@ -21,6 +17,7 @@ int main(int argc, char **argv) {
     extern FILE* yyin; 
     extern ASTNode* root_node;
     extern TypeTable* type_table;
+
     type_table = create_type_table();
 
     // Registrar tipos predefinidos
@@ -45,7 +42,6 @@ int main(int argc, char **argv) {
     // Parsear la entrada
     int parse_result = yyparse();
     if (parse_result != 0 || root_node == NULL) {
-        fprintf(stderr, "Error de parsing.\n");
         if (yyin != stdin) fclose(yyin);
         return 1;
     }
@@ -61,6 +57,10 @@ int main(int argc, char **argv) {
     semantic_visit(visitor,root_node, global_scope);
 
     printf("Chequeo semántico completado.\n");
+    if (semantic_error_count > 0) {
+        fprintf(stderr, "Se encontraron %d errores semánticos. Compilación abortada.\n", semantic_error_count);
+        exit(EXIT_FAILURE);
+    }
     print_ast_node(root_node, 0); // Imprimir el AST para depuración
 
     // Generación de código LLVM

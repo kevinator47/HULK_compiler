@@ -6,10 +6,18 @@
 #include <string.h>
 #include <stdbool.h>
 
+// Foward Declaration
+typedef struct ASTNode ASTNode;
+
+// Variables globales del compilador
+extern const char *Hulk_Op_Names[] ;
+extern int line_num;
+extern char current_line[];
+extern int semantic_error_count;
 typedef enum {
     HULK_Type_Undefined, HULK_Type_Null,
     HULK_Type_Number, HULK_Type_String, HULK_Type_Boolean,
-    HULK_Type_UserDefined, HULK_Type_Object,
+    HULK_Type_UserDefined, HULK_Type_Object, HULK_Type_Error,
 } HULK_Type;
 
 typedef enum {
@@ -28,7 +36,7 @@ typedef enum {
     SYMBOL_ANY,
 } SymbolKind;
 
-extern const char *Hulk_Op_Names[] ;
+void report_semantic_error(ASTNode* node, const char* fmt, ...);
 
 #define DIE(msg) do { fprintf(stderr, "Error: %s\n", msg); exit(EXIT_FAILURE); } while (0)
 

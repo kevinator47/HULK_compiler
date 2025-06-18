@@ -12,13 +12,19 @@ const char *Hulk_Op_Names[] = {
     [LE_TK] = "LE", [EQ_TK] = "EQ", [NE_TK] = "NE",
 };
 
+void create_ast_base(ASTNode* base, ASTNodeType type, TypeDescriptor* return_type) {
+    base->type = type;
+    base->return_type = return_type;
+    base->accept = generic_ast_accept;
+    base->line = line_num;
+     base->line_text = strdup(current_line);
+}
+
 ASTNode* create_number_literal_node(double value, TypeTable *table) {
     LiteralNode *node = malloc(sizeof(LiteralNode));
     if (!node) return NULL;
 
-    node->base.type = AST_Node_Literal;
-    node->base.return_type = type_table_lookup(table, "Number");
-    node->base.accept = generic_ast_accept;
+    create_ast_base(&node->base, AST_Node_Literal, type_table_lookup(table, "Number"));
     node->value.number_value = value;
 
     return (ASTNode*) node;
@@ -28,9 +34,7 @@ ASTNode* create_string_literal_node(char *value, TypeTable *table) {
     LiteralNode *node = malloc(sizeof(LiteralNode));
     if (!node) return NULL;
 
-    node->base.type = AST_Node_Literal;
-    node->base.return_type = type_table_lookup(table, "String");
-    node->base.accept = generic_ast_accept;
+    create_ast_base(&node->base, AST_Node_Literal, type_table_lookup(table, "String"));
     node->value.string_value = strdup(value); 
 
     return (ASTNode*) node;
@@ -40,9 +44,7 @@ ASTNode* create_bool_literal_node(int value, TypeTable *table) {
     LiteralNode *node = malloc(sizeof(LiteralNode));
     if (!node) return NULL;
 
-    node->base.type = AST_Node_Literal;
-    node->base.return_type = type_table_lookup(table, "Bool");
-    node->base.accept = generic_ast_accept;
+    create_ast_base(&node->base, AST_Node_Literal, type_table_lookup(table, "Bool"));
     node->value.bool_value = value != 0; // asegurar 0 o 1
 
     return (ASTNode*) node;
@@ -51,9 +53,7 @@ ASTNode* create_unary_operation_node(HULK_Op operator, ASTNode *operand, TypeTab
     UnaryOperationNode *node = malloc(sizeof(UnaryOperationNode));
     if (!node) return NULL;
 
-    node->base.type = AST_Node_Unary_Operation;
-    node->base.return_type = type_table_lookup(table, "Undefined");
-    node->base.accept = generic_ast_accept;
+    create_ast_base(&node->base, AST_Node_Unary_Operation, type_table_lookup(table, "Undefined"));
     node->operator = operator;
     node->operand = operand;
 
@@ -64,9 +64,7 @@ ASTNode* create_binary_operation_node(HULK_Op operator, ASTNode *left, ASTNode *
     BinaryOperationNode *node = malloc(sizeof(BinaryOperationNode));
     if (!node) return NULL;
 
-    node->base.type = AST_Node_Binary_Operation;
-    node->base.return_type = type_table_lookup(table, "Undefined"); 
-    node->base.accept = generic_ast_accept;
+    create_ast_base(&node->base, AST_Node_Binary_Operation, type_table_lookup(table, "Undefined"));
     node->operator = operator;
     node->left = left;
     node->right = right;
@@ -78,9 +76,7 @@ ASTNode* create_expression_block_node(ASTNode **expressions, int count, TypeTabl
     ExpressionBlockNode *node = malloc(sizeof(ExpressionBlockNode));
     if (!node) return NULL;
 
-    node->base.type = AST_Node_Expression_Block;
-    node->base.return_type = type_table_lookup(table, "Undefined");
-    node->base.accept = generic_ast_accept;
+    create_ast_base(&node->base, AST_Node_Expression_Block, type_table_lookup(table, "Undefined"));
     
     // do not assign the array, copy each expression
     node->expressions = malloc(sizeof(ASTNode*) * count);
@@ -97,9 +93,7 @@ ASTNode* create_conditional_node(ASTNode *condition, ASTNode *then_branch, ASTNo
     ConditionalNode *node = malloc(sizeof(ConditionalNode));
     if (!node) return NULL;
 
-    node->base.type = AST_Node_Conditional;
-    node->base.return_type = type_table_lookup(table, "Undefined");
-    node->base.accept = generic_ast_accept;
+    create_ast_base(&node->base, AST_Node_Conditional, type_table_lookup(table, "Undefined"));
     node->condition = condition;
     node->then_branch = then_branch;
     node->else_branch = else_branch;
@@ -111,9 +105,8 @@ ASTNode* create_while_loop_node(ASTNode *condition, ASTNode *body, TypeTable *ta
     WhileLoopNode *node = malloc(sizeof(WhileLoopNode));
     if (!node) return NULL;
 
-    node->base.type = AST_Node_While_Loop;
-    node->base.return_type = type_table_lookup(table, "Undefined");
-    node->base.accept = generic_ast_accept;
+    create_ast_base(&node->base, AST_Node_While_Loop, type_table_lookup(table, "Undefined"));
+
     node->condition = condition;
     node->body = body;
 
@@ -124,9 +117,7 @@ ASTNode* create_variable_assigment_node(VariableAssigment* assigment, TypeTable*
     VariableAssigmentNode* node = malloc(sizeof(VariableAssigmentNode));
     if(!node) return NULL;
 
-    node->base.type = AST_Node_Variable_Assigment;
-    node->base.return_type = type_table_lookup(table, "Undefined");
-    node->base.accept = generic_ast_accept;
+    create_ast_base(&node->base, AST_Node_Variable_Assigment, type_table_lookup(table, "Undefined"));
     node->scope = NULL;
     node->assigment = assigment;
 
@@ -137,9 +128,7 @@ ASTNode* create_let_in_node(VariableAssigmentNode** assigments, int assigment_co
     LetInNode* node = malloc(sizeof(LetInNode));
     if (!node) return NULL;
 
-    node->base.type = AST_Node_Let_In;
-    node->base.return_type = type_table_lookup(table, "Undefined");
-    node->base.accept = generic_ast_accept;
+    create_ast_base(&node->base, AST_Node_Let_In, type_table_lookup(table, "Undefined"));
     node->scope = NULL;
 
     node->assigments = malloc(sizeof(VariableAssigmentNode*) * assigment_count);
@@ -163,11 +152,10 @@ ASTNode* create_variable_node(char *name, TypeTable *table) {
     VariableNode *node = malloc(sizeof(VariableNode));
     if (!node) return NULL;
 
-    node->base.type = AST_Node_Variable;
-    node->base.return_type = type_table_lookup(table, "Undefined");
+    create_ast_base(&node->base, AST_Node_Variable, type_table_lookup(table, "Undefined"));
+
     node->name = strdup(name);
     node->scope = NULL;
-    node->base.accept = generic_ast_accept;
 
     return (ASTNode*) node;
 }
@@ -176,9 +164,7 @@ ASTNode* create_reassign_node(char *name, ASTNode *value, TypeTable *table) {
     ReassignNode *node = malloc(sizeof(ReassignNode));
     if (!node) return NULL;
 
-    node->base.type = AST_Node_Reassign;
-    node->base.return_type = type_table_lookup(table, "Undefined");
-    node->base.accept = generic_ast_accept;
+    create_ast_base(&node->base, AST_Node_Reassign, type_table_lookup(table, "Undefined"));
     node->name = strdup(name);
     node->value = value;
     node->scope = NULL;
@@ -190,9 +176,7 @@ ASTNode* create_function_definition_node(const char* name, char** param_names, c
     FunctionDefinitionNode* node = malloc(sizeof(FunctionDefinitionNode));
     if (!node) return NULL;
 
-    node->base.type = AST_Node_Function_Definition;
-    node->base.return_type = type_table_lookup(table, "Null");
-    node->base.accept = generic_ast_accept;
+    create_ast_base(&node->base, AST_Node_Function_Definition, type_table_lookup(table, "Null"));
 
     node->name = strdup(name);
     node->param_count = param_count;
@@ -215,16 +199,13 @@ ASTNode* create_function_definition_node(const char* name, char** param_names, c
 
 ASTNode* create_function_definition_list_node(TypeTable* table) {
     FunctionDefinitionListNode* node = malloc(sizeof(FunctionDefinitionListNode));
-    node->base.type = AST_Node_Function_Definition_List;
-    node->base.return_type = type_table_lookup(table, "Null");
-    node->base.accept = generic_ast_accept;
+    create_ast_base(&node->base, AST_Node_Function_Definition_List, type_table_lookup(table, "Null"));
     node->functions = NULL;
     node->function_count = 0;
     return (ASTNode*) node;
 }
     
 ASTNode* append_function_definition_to_list(FunctionDefinitionListNode* list, FunctionDefinitionNode* def) {
-    list->base.accept = generic_ast_accept;
     list->functions = realloc(list->functions, sizeof(FunctionDefinitionNode*) * (list->function_count + 1));
     list->functions[list->function_count] = def;
     list->function_count++;
@@ -235,9 +216,7 @@ ASTNode* create_function_call_node(char* name, ASTNode** args, int arg_count, Ty
     FunctionCallNode *node = malloc(sizeof(FunctionCallNode));
     if (!node) return NULL;
 
-    node->base.type = AST_Node_Function_Call;
-    node->base.return_type = type_table_lookup(table, "Undefined");
-    node->base.accept = generic_ast_accept;
+    create_ast_base(&node->base, AST_Node_Function_Call, type_table_lookup(table, "Undefined"));
     node->name = strdup(name);
     node->arg_count = arg_count;
     node->scope = NULL;
@@ -255,9 +234,7 @@ ASTNode* create_type_definition_node(char* type_name, char** param_names, char**
 {
     TypeDefinitionNode* node = malloc(sizeof(TypeDefinitionNode));
 
-    node->base.type = AST_Node_Type_Definition;
-    node->base.return_type = type_table_lookup(table, "Null");
-    node->base.accept = generic_ast_accept;
+    create_ast_base(&node->base, AST_Node_Type_Definition, type_table_lookup(table, "Null"));
 
     node->type_name = strdup(type_name);
     node->parent_name = strdup(parent_name);
@@ -304,9 +281,7 @@ ASTNode* create_type_definition_list_node(TypeDefinitionNode** list, int count, 
     TypeDefinitionListNode* node = malloc(sizeof(TypeDefinitionListNode));
     if (!node) return NULL;
 
-    node->base.type = AST_Node_Type_Definition_List;
-    node->base.return_type = type_table_lookup(table, "Null");
-    node->base.accept = generic_ast_accept;
+    create_ast_base(&node->base, AST_Node_Type_Definition_List, type_table_lookup(table, "Null"));
 
     node->count = count;
     node->definitions = malloc(sizeof(TypeDefinitionNode*) * count);
@@ -320,9 +295,7 @@ ASTNode* create_type_definition_list_node(TypeDefinitionNode** list, int count, 
 
 ASTNode* create_new_node(const char* type_name, ASTNode** args, int arg_count, TypeTable* table) {
     NewNode* node = malloc(sizeof(NewNode));
-    node->base.type = AST_Node_New;  
-    node->base.return_type = type_table_lookup(table, "Undefined");
-    node->base.accept = generic_ast_accept;
+    create_ast_base(&node->base, AST_Node_New, type_table_lookup(table, "Undefined"));
     node->type_name = strdup(type_name);
     node->arg_count = arg_count;
     
@@ -340,9 +313,7 @@ ASTNode* create_new_node(const char* type_name, ASTNode** args, int arg_count, T
 
 ASTNode* create_attribute_access_node(ASTNode* object, const char* attribute_name, ASTNode** args, int arg_count, bool is_method_call, TypeTable* table) {
     AttributeAccessNode* node = malloc(sizeof(AttributeAccessNode));
-    node->base.type = AST_Node_Attribute_Access;
-    node->base.return_type = type_table_lookup(table, "Undefined");
-    node->base.accept = generic_ast_accept;
+    create_ast_base(&node->base, AST_Node_Attribute_Access, type_table_lookup(table, "Undefined"));
 
     node->object = object;
     node->attribute_name = strdup(attribute_name); // Copia del string
@@ -366,9 +337,7 @@ ASTNode* create_program_node(ASTNode* function_list, ASTNode* type_definitions, 
     ProgramNode *node = malloc(sizeof(ProgramNode));
     if (!node) return NULL;
 
-    node->base.type = AST_Node_Program;
-    node->base.return_type = type_table_lookup(table, "Null");
-    node->base.accept = generic_ast_accept;
+    create_ast_base(&node->base, AST_Node_Program, type_table_lookup(table, "Null"));
     node->function_list = (FunctionDefinitionListNode*) function_list;
     node->type_definitions = (TypeDefinitionListNode*) type_definitions;
     node->root = root;

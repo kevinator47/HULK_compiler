@@ -289,6 +289,146 @@ No ocurrir\'a ning\'un error sem\'antico, debido a que se especifica el tipo de 
 \texttt{n + 1} es sem\'anticamente correcta y devuelve un tipo Number.
 
 \subsection{Definici\'on de tipos y acceso a propiedades}
-HULK es lenguaje con POO, por tanto se puede definir tipos nuevos en cualquier momento y utilizarlos en el programa
+HULK es lenguaje con POO, por tanto se puede definir tipos nuevos en cualquier momento y utilizarlos en el programa. Al igual que en los tipos
+b\'asicos del lenguaje, la informaci\'on de los tipos creados por el usuario se guardan en un \textbf{TypeDescriptor}. Sin embargo en esta ocasi\'on
+la propiedad \textbf{TypeInfo} deja de ser Null, ya que este tipo fue definido por el propio usuario.
+
+Al ser pensado para la versi\'on de tipado est\'atico, como mismo ocurre en las funciones, en este caso se deben definir los tipos que tendr\'an los 
+par\'ametros que recibe la funci\'on constructor del nuevo tipo definido por el usuario.  Una vez m\'as, esto ayuda a la hora de realizar el chequeo 
+sem\'antico de cada funci\'on o propiedad que se define en un objeto. 
+
+\subsubsection{Herencia}
+La herencia tambi\'en es una de las tantas posibilidades que permite el lenguaje Hulk, posibilidad que tambi\'en es manejada por el compilador. Cada tipo
+tiene en su \texttt{TypeDescriptor} una propiedad con el nombre de \texttt{parent}, la cual hace referencia a un posible objeto padre del objeto en cuesti\'on.
+El padre por defecto definido por el compilador de todos los tipos, incluidos los tipos definidos por el lenguaje es \textbf{Object}, de esta manera, se logra 
+tener una condici\'on de parada para el algoritmo de b\'usqueda de los padres. El algoritmo es similar a un DFS, si se tiene un tipo A, y accede a una propiedad
+mediante la notaci\'n \texttt{A.prop()} si la propiedad est\'a en la definici\'on del tipo A, entonces se continua con el cheuqeo del programa,
+en caso contrario se busca la definici\'on del tipo A y se hace una b\'usqueda de sus padres de manera recursiva, hasta llegar al tipo \textbf{Object} o hasta
+llegar a alg\'un ancestro que contenga la propiedad. 
+
+
+\subsubsection{Herencia Circular}
+Esto no est\'a permitido en el lenguaje, por tanto en el momento de definir un tipo nuevo, si este hereda de alg\'un tipo, se debe realizar una b\'usqueda de
+los ancestros de manera recursiva, si se llega al tipo actual, entonces es evidencia de la existencia de un ciclo en la herencia, por tanto se debe lanzar un 
+error. Note que el algoritmo es el mismo en ambos casos, por eso se opt\'o por reutilizar el mismo c\'odigo para la realizaci\'on de las dos tareas.
+
+\section{Generación de Código LLVM}
+
+La generación de código intermedio en el compilador \textbf{Hulk} se realiza utilizando \textbf{LLVM IR} (Intermediate Representation), que permite producir una representación de bajo nivel optimizable y portable del programa fuente.
+
+\subsection{Componentes Principales}
+
+En esta sección se describen las estructuras fundamentales de LLVM utilizadas para generar código.
+
+\begin{itemize}
+    \item \textbf{LLVMContext}: Encapsula información global como tipos y constantes.
+    \item \textbf{LLVMModule}: Representa el programa completo como una unidad LLVM.
+    \item \textbf{LLVMBuilder}: Se encarga de insertar instrucciones en bloques básicos.
+\end{itemize}
+
+\subsection{Estructura del Generador}
+
+A continuación se detallan los elementos que conforman la estructura principal del generador de código, encargados de mantener estado durante la traducción del AST.
+
+\begin{itemize}
+    \item Contexto, módulo y builder de LLVM.
+    \item Tabla de tipos global (\texttt{TypeTable}).
+    \item Pilas de ámbitos para tipos y variables (\texttt{TypeScopeStack}, \texttt{ScopeStack}).
+    \item Funciones de visita para cada tipo de nodo del AST, aplicando el patrón \textit{Visitor}.
+\end{itemize}
+
+\subsection{Flujo General de Generación}
+
+Esta sección resume el flujo completo de la generación de código, desde la preparación del entorno hasta la verificación final del módulo LLVM.
+
+\begin{enumerate}
+    \item \textbf{Inicialización}: Se crean las estructuras de base necesarias y se declaran elementos externos.
+    \begin{itemize}
+        \item Se declaran funciones externas como \texttt{printf}, \texttt{malloc}, \texttt{sqrt}, etc.
+        \item Se registran tipos definidos por el usuario como estructuras LLVM.
+        \item Se declaran las firmas de todas las funciones y métodos definidos por el usuario.
+    \end{itemize}
+    
+    \item \textbf{Traducción del AST}: Se recorren los nodos del árbol sintáctico y se generan instrucciones LLVM correspondientes.
+    \begin{itemize}
+        \item Se construyen los cuerpos de las funciones definidas por el usuario.
+        \item Se traduce el nodo raíz del programa, generando el contenido del \texttt{main}.
+    \end{itemize}
+    
+    \item \textbf{Gestión de Ámbitos}: Se administra el almacenamiento de variables y su visibilidad a través de estructuras de pila.
+    \begin{itemize}
+        \item Se utiliza una pila de \texttt{IrSymbolTable} para almacenar variables y soportar scopes anidados.
+        \item Cada símbolo contiene un \texttt{LLVMValueRef} que referencia su alocación en memoria.
+    \end{itemize}
+    
+    \item \textbf{Verificación}: Se garantiza que el IR generado sea válido y esté libre de errores estructurales.
+    \begin{itemize}
+        \item Al finalizar, se valida el módulo con \texttt{LLVMVerifyModule} para detectar errores en el IR.
+    \end{itemize}
+\end{enumerate}
+
+\subsection{Ejemplo de Traducción}
+
+Este ejemplo ilustra cómo una sentencia simple se transforma en instrucciones LLVM:
+
+Una sentencia como \texttt{let x = 5.0} se transforma en:
+
+\begin{enumerate}
+    \item Creación de una instrucción \texttt{alloca} para \texttt{x}.
+    \item Inserción de una instrucción \texttt{store} para guardar el valor \texttt{5.0}.
+    \item Registro del símbolo \texttt{x} en la tabla de símbolos actual.
+\end{enumerate}
+
+\section{Manejo de Errores}
+
+El manejo de errores en el compilador \textbf{Hulk} está diseñado para proporcionar mensajes útiles y precisos durante las distintas fases del análisis y la generación de código. A continuación se describe cómo se gestionan los errores en cada etapa del proceso de compilación.
+
+\subsection{Errores Léxicos (Lexer con Flex)}
+
+Durante el análisis léxico, el analizador construido con \textbf{Flex} identifica patrones de texto y los convierte en tokens. El manejo de errores léxicos se realiza cuando se detectan caracteres no válidos o secuencias inesperadas.
+
+\begin{itemize}
+    \item Se define una regla de ``fallback'' en el lexer para capturar cualquier carácter no reconocido.
+    \item Se imprime un mensaje de error indicando la línea y el carácter inesperado.
+    \item El lexer puede continuar si se desea recuperar el análisis tras un error.
+\end{itemize}
+
+\subsection{Errores Sintácticos (Parser con Bison)}
+
+Durante el análisis sintáctico, el parser construido con \textbf{Bison} utiliza reglas gramaticales para validar la estructura del programa.
+
+\begin{itemize}
+    \item Se define la función \texttt{yyerror} para reportar errores sintácticos con contexto, como número de línea y descripción.
+    \item Bison permite estrategias de recuperación mediante la palabra clave \texttt{error}, que permite continuar el análisis tras ciertos fallos.
+    \item Se pueden realizar anotaciones semánticas parciales incluso si hay errores sintácticos, facilitando una mejor recuperación.
+\end{itemize}
+
+\subsection{Errores Semánticos (Chequeo con Visitor)}
+
+El chequeo semántico se realiza mediante el patrón \textbf{Visitor}, que recorre el AST y valida reglas del lenguaje como tipos, existencia de variables y estructuras.
+
+\begin{itemize}
+    \item Se detectan errores como variables no declaradas, incompatibilidades de tipo, uso incorrecto de métodos o estructuras.
+    \item Se registran errores con descripciones claras y ubicación (línea/columna) cuando se dispone de esa información en los nodos del AST.
+    \item El recorrido del árbol puede continuar tras un error semántico, acumulando múltiples errores antes de abortar.
+\end{itemize}
+
+\subsection{Errores en la Generación de Código (LLVM)}
+
+La fase de generación de código con \textbf{LLVM} puede detectar inconsistencias adicionales antes de producir el binario final.
+
+\begin{itemize}
+    \item Se utiliza \texttt{LLVMVerifyModule} para verificar la validez del IR generado.
+    \item En caso de error, se imprime una descripción detallada y se detiene la compilación.
+    \item Esta verificación previene errores en tiempo de ejecución generados por instrucciones mal formadas o estructuras incorrectas.
+\end{itemize}
+
+\subsection{Resumen General}
+
+\begin{itemize}
+    \item El compilador implementa una cadena de manejo de errores progresiva, desde el análisis léxico hasta la generación de código.
+    \item En cada fase se procura ofrecer diagnósticos útiles, sin abortar inmediatamente, para permitir una mejor experiencia al desarrollador.
+    \item Los errores son gestionados de forma localizada, permitiendo que fases posteriores se ejecuten si es razonablemente seguro hacerlo.
+\end{itemize}
 
 \end{document}

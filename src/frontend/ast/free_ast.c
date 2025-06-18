@@ -4,6 +4,9 @@
 
 void free_ast_node(ASTNode *node) {
     if (!node) return;
+    
+    if (node->line_text)
+        free(node->line_text);
 
     switch (node->type) {
         case AST_Node_Literal: {

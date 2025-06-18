@@ -7,14 +7,18 @@
 #include "common/common.h"
 #include "hulk_type/type_table.h"
 
-extern int yylex();
+extern char* yytext;
+
+int yylex(void);
+int yyparse(void);
 void yyerror(const char *s);
 
 ASTNode *root_node;
 TypeTable *type_table;
 
-
 %}
+
+%define parse.error verbose
 
 %union {
     double dval;
@@ -72,7 +76,7 @@ TypeTable *type_table;
 
 %%
 Program                 : FunctionDefList TypeDefinitionList Expression OptionalEnd 
-                        { 
+                        {
                             root_node = create_program_node(
                                 $1, 
                                 create_type_definition_list_node($2.nodes, $2.count, type_table),
@@ -394,6 +398,11 @@ OptionalEnd             : SEMICOLON
 %%
 
 void yyerror(const char *s) {
-    fprintf(stderr, "Error: %s\n", s);
-}
+    fprintf(stderr, "%s\n", s);
+    fprintf(stderr, "  (at line %d):", line_num);
+    fprintf(stderr, "\"%s... ,\"", current_line);
 
+    if (yytext && *yytext != '\0') {
+        fprintf(stderr, " near '%s'\n", yytext);
+    }
+}

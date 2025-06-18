@@ -89,7 +89,8 @@ void register_builtin_types(TypeTable* type_table) {
         create_builtin_type(HULK_Type_Boolean, "Bool", object_type),
         create_builtin_type(HULK_Type_String, "String", object_type),
         create_builtin_type(HULK_Type_Null, "Null", object_type),
-        create_builtin_type(HULK_Type_Undefined, "Undefined", object_type)
+        create_builtin_type(HULK_Type_Undefined, "Undefined", object_type),
+        create_builtin_type(HULK_Type_Error, "_Error", NULL)
     };
 
     int count = sizeof(builtins) / sizeof(builtins[0]);
